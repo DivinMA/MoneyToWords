@@ -26,10 +26,11 @@
       <PackageReadmeFile>README.md</PackageReadmeFile>
 
       <!-- Документация и отладка -->
-      <GenerateDocumentationFile>true</GenerateDocumentationFile>
-      <EmbedAllSources>true</EmbedAllSources>
       <IncludeSymbols>true</IncludeSymbols>
       <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+      <EmbedAllSources>true</EmbedAllSources>
+      <PublishRepositoryUrl>true</PublishRepositoryUrl>
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
       <!-- Сборка -->
       <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -62,5 +63,8 @@
       <None Include="icon.png" />
   </ItemGroup>
 
+  <ItemGroup>
+      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
 </Project>
