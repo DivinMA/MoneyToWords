@@ -1,0 +1,40 @@
+name: 💡 Предложить фичу
+description: У вас есть идея для улучшения?
+title: "Фича: "
+labels: enhancement
+assignees: DivinMA
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за идею! Расскажите, что вы хотите добавить.
+
+  - type: textarea
+    attributes:
+      label: Описание
+      description: Что вы хотите добавить?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Мотивация
+      description: Зачем это нужно? Где пригодится?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Пример использования
+      placeholder: |
+        ```fsharp
+        toWordsEng 21_000L 0L
+        // → "twenty-one thousand dollars"
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Альтернативы
+      description: Были ли другие варианты? Почему выбран этот?

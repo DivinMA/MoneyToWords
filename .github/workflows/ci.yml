@@ -1,0 +1,100 @@
+# .github/workflows/ci.yml
+name: CI/CD
+
+# Запускать при:
+on:
+  # Push в основную ветку
+  push:
+    branches:
+      - main
+      - master
+  # Pull Request
+  pull_request:
+    branches:
+      - main
+      - master
+  # При создании тега — например, v1.0.0
+  release:
+    types: [published]
+
+jobs:
+  # 1. Сборка и тесты
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['10.0.x']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+  # 2. Сборка пакета (только для релизов)
+  pack:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Pack
+        run: |
+          dotnet pack --configuration Release --no-restore \
+            --output ./artifacts \
+            /p:PackageVersion=${{ github.event.release.tag_name }} \
+            /p:IncludeSymbols=true \
+            /p:SymbolPackageFormat=snupkg
+
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload Symbol package
+        uses: actions/upload-artifact@v4
+        with:
+          name: symbol-packages
+          path: ./artifacts/*.snupkg
+          if-no-files-found: warn
+
+  # 3. Создание GitHub Release (если не через UI)
+  # (Опционально — если релиз создаётся вручную, не нужно)
+  publish-nuget:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: pack
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+
+      - name: Publish to NuGet.org
+        run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate

@@ -1,0 +1,20 @@
+name: ❓ Задать вопрос
+description: Не понимаете, как что-то работает?
+title: "Вопрос: "
+labels: question
+assignees: DivinMA
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Задайте свой вопрос — постараемся помочь!
+
+  - type: textarea
+    attributes:
+      label: Вопрос
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Что вы уже попробовали?

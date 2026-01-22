@@ -3,61 +3,77 @@
 ###############################################################################
 * text=auto
 
-###############################################################################
-# Set default behavior for command prompt diff.
-#
-# This is need for earlier builds of msysgit that does not have it on by
-# default for csharp files.
-# Note: This is only used by command line
-###############################################################################
-#*.cs     diff=csharp
+# Ensure consistent line endings for F# and config files
+*.fs    text eol=lf diff=fsharp
+*.fsi   text eol=lf diff=fsharp
+*.fsx   text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.config text eol=lf
+
+# Windows-specific
+*.bat   text eol=crlf
 
 ###############################################################################
-# Set the merge driver for project and solution files
+# Set the merge driver for project files (optional)
 #
-# Merging from the command prompt will add diff markers to the files if there
-# are conflicts (Merging from VS is not affected by the settings below, in VS
-# the diff markers are never inserted). Diff markers may cause the following 
-# file extensions to fail to load in VS. An alternative would be to treat
-# these files as binary and thus will always conflict and require user
-# intervention with every merge. To do so, just uncomment the entries below
+# Uncomment if you have frequent merge conflicts in project files
 ###############################################################################
-#*.sln       merge=binary
-#*.csproj    merge=binary
-#*.vbproj    merge=binary
-#*.vcxproj   merge=binary
-#*.vcproj    merge=binary
-#*.dbproj    merge=binary
 #*.fsproj    merge=binary
-#*.lsproj    merge=binary
-#*.wixproj   merge=binary
-#*.modelproj merge=binary
-#*.sqlproj   merge=binary
-#*.wwaproj   merge=binary
+#*.sln       merge=binary
 
 ###############################################################################
-# behavior for image files
+# Linguist attributes for GitHub
 #
-# image files are treated as binary by default.
+# Control how GitHub classifies files (languages, docs, examples, etc.)
 ###############################################################################
-#*.jpg   binary
-#*.png   binary
-#*.gif   binary
+# F# files
+*.fsproj    linguist-generated=true linguist-language=F#
+*.sln       linguist-generated=true
+
+# Documentation
+*.md        linguist-language=Markdown
+README.md   linguist-documentation=false
+LICENSE.txt     linguist-documentation
+CONTRIBUTING.md linguist-documentation
+CODE_OF_CONDUCT.md linguist-documentation
+CHANGELOG.md linguist-documentation
+
+# Folders
+docs/           linguist-documentation
+examples/       linguist-example
+.github/        linguist-generated
+
+# Logs, temp files — exclude from archive
+*.log       export-ignore
+*.tmp       export-ignore
+artifacts/  export-ignore
+bin/        export-ignore
+obj/        export-ignore
+TestResults/    export-ignore
+coveragereport/ export-ignore
 
 ###############################################################################
-# diff behavior for common document formats
-# 
-# Convert binary document formats to text before diffing them. This feature
-# is only available from the command line. Turn it on by uncommenting the 
-# entries below.
+# Binary files (default)
+# Images, archives, etc. — treated as binary
 ###############################################################################
-#*.doc   diff=astextplain
-#*.DOC   diff=astextplain
-#*.docx  diff=astextplain
-#*.DOCX  diff=astextplain
-#*.dot   diff=astextplain
-#*.DOT   diff=astextplain
-#*.pdf   diff=astextplain
-#*.PDF   diff=astextplain
-#*.rtf   diff=astextplain
-#*.RTF   diff=astextplain
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.gif   binary
+*.ico   binary
+*.dll   binary
+*.exe   binary
+*.zip   binary
+*.tar.gz binary
+*.nupkg binary
+
+###############################################################################
+# Text conversion for diff (command line only)
+# Useful for diffing binary documents as text
+###############################################################################
+*.pdf   diff=astextplain
+*.docx  diff=astextplain
+*.xlsx  diff=astextplain

@@ -1,0 +1,63 @@
+name: 🐞 Сообщить об ошибке
+description: Опишите баг, который вы нашли
+title: "Баг: "
+labels: bug
+assignees: DivinMA
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо, что помогаете улучшать проект!
+
+        Пожалуйста, заполните форму — это поможет быстрее разобраться.
+
+  - type: textarea
+    attributes:
+      label: Описание
+      description: Что пошло не так?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Шаги воспроизведения
+      value: |
+        1. 
+        2. 
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Ожидаемое поведение
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Фактическое поведение
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Версия библиотеки
+      placeholder: например, 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: .NET версия
+      placeholder: например, 10.0 или выше
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Пример кода (если есть)
+      placeholder: |
+        ```fsharp
+        toWords 1001L 0L
+        ```

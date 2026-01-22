@@ -1,1 +1,4 @@
-<Solution />
+<Solution>
+  <Project Path="src/MoneyToWords/MoneyToWords.fsproj" Id="5a3ba75c-099b-49e1-9dce-0b782b3cafb0" />
+  <Project Path="tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj" />
+</Solution>

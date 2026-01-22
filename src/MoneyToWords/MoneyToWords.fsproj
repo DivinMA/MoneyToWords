@@ -1,0 +1,62 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <!-- Основные -->
+      <TargetFramework>net10.0</TargetFramework>
+      <Nullable>enable</Nullable>
+      <LangVersion>latest</LangVersion>
+      <ImplicitUsings>enable</ImplicitUsings>
+
+      <!-- Пакет -->
+      <PackageId>MoneyToWords</PackageId>
+      <Version>1.0.0</Version>
+      <VersionPrefix>1.0.0</VersionPrefix>
+      <Authors>Divin MA</Authors>
+      <Company>Учение - свет, ...</Company>
+      <Copyright>© 2026</Copyright>
+      <Description>Преобразование денежной суммы в строку прописью. Поддержка русского языка, DDD, производительность, локализация.</Description>
+      <PackageProjectUrl>https://github.com/DivinMA/MoneyToWords</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
+      <PackageTags>fsharp;money;spellout;ddd;localization;ru</PackageTags>
+      <PackageIcon>icon.png</PackageIcon>
+      <PackageReadmeFile>README.md</PackageReadmeFile>
+
+      <!-- Документация и отладка -->
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
+      <EmbedAllSources>true</EmbedAllSources>
+      <IncludeSymbols>true</IncludeSymbols>
+      <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+      <!-- Сборка -->
+      <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+      <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+      <Optimize>true</Optimize>
+      <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <!-- Файлы -->
+  <ItemGroup>
+      <!-- Domain -->
+      <Compile Include="Domain\Money.fs" />
+      <Compile Include="Domain\Language.fs" />
+
+      <!-- Application -->
+      <Compile Include="Application\Declension.fs" />
+      <Compile Include="Application\NumberToWords.fs" />
+
+      <!-- Infrastructure -->
+      <Compile Include="Infrastructure\RussianRules.fs" />
+      <Compile Include="Infrastructure\TextOutput.fs" />
+
+      <!-- Presentation -->
+      <Compile Include="Presentation\MoneyToWords.fs" />
+  </ItemGroup>
+
+  <!-- Ресурсы (для NuGet) -->
+  <ItemGroup>
+      <None Include="..\docs\README.md" Link="README.md" />
+      <None Include="..\icons\icon.png" Link="icon.png" />
+  </ItemGroup>
+
+
+</Project>

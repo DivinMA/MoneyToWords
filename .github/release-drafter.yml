@@ -1,0 +1,44 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '🚀 Новые возможности'
+    labels:
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Исправления'
+    labels:
+      - 'bug'
+  - title: '🧪 Тесты'
+    labels:
+      - 'tests'
+  - title: '🔧 Инфраструктура'
+    labels:
+      - 'ci'
+      - 'github-actions'
+      - 'dependabot'
+  - title: '📚 Документация'
+    labels:
+      - 'documentation'
+      - 'readme'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&' # Escape these characters in $TITLE
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'patch'
+      - 'bug'
+      - 'documentation'
+      - 'tests'
+  default: patch
+template: |
+  ## $NEXT_VERSION ($DATE)
+
+  $CHANGES

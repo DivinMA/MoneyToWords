@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- Основное -->
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <GenerateProgramFile>false</GenerateProgramFile>
+
+        <!-- Не генерировать warnings как ошибки -->
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Тестовые модули -->
+        <Compile Include="Tests\MoneyValidationTests.fs" />
+        <Compile Include="Tests\RubleSpellingTests.fs" />
+        <Compile Include="Tests\KopeckSpellingTests.fs" />
+        <Compile Include="Tests\DeclensionTests.fs" />
+        <Compile Include="Tests\RussianRulesTests.fs" />
+        <Compile Include="Tests\LargeNumbersTests.fs" />
+        <Compile Include="Tests\EdgeCasesTests.fs" />
+        <Compile Include="Tests\PropertyTests.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Зависимости -->
+        <PackageReference Include="FsCheck" Version="3.3.2" />
+        <PackageReference Include="FsCheck.Xunit" Version="3.3.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+        <PackageReference Include="Unquote" Version="7.0.1" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Ссылка на основную библиотеку -->
+        <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Автоматическое открытие Xunit -->
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+</Project>
