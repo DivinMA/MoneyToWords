@@ -58,8 +58,8 @@
 
   <!-- Ресурсы (для NuGet) -->
   <ItemGroup>
-      <None Include="..\docs\README.md" Link="README.md" />
-      <None Include="..\icons\icon.png" Link="icon.png" />
+      <None Include="README.md" />
+      <None Include="icon.png" />
   </ItemGroup>
 
 
