@@ -1,6 +1,6 @@
 # 💰 MoneyToWords — Сумма прописью
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/nuget/v/MoneyToWords.svg)](https://www.nuget.org/packages/MoneyToWords)
+[![NuGet](https://img.shields.io/nuget/v/MoneyToWords.svg)](https://www.nuget.org/packages/MoneyToWordsFSharpLib)
 [![Build](https://github.com/DivinMA/MoneyToWords/actions/workflows/ci.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 
@@ -68,6 +68,7 @@
   |   └───── 456 → "четыреста пятьдесят шесть тысяч"
   └───────── 123 → "сто двадцать три миллиона"
 ```
+
 Для каждой группы:
 
 - Используются правильные формы: тысяча, тысячи, тысяч
