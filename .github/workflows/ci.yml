@@ -83,8 +83,7 @@ jobs:
           path: ./artifacts/*.snupkg
           if-no-files-found: warn
 
-  # 3. Создание GitHub Release (если не через UI)
-  # (Опционально — если релиз создаётся вручную, не нужно)
+  # 3. Создание GitHub Release
   publish-nuget:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: pack
