@@ -65,7 +65,7 @@ jobs:
         run: |
           dotnet pack --configuration Release --no-restore \
             --output ./artifacts \
-            /p:PackageVersion=${{ github.event.release.tag_name }} \
+            /p:PackageVersion=${{ github.event.release.tag_name | trimstart('v') }} \
             /p:IncludeSymbols=true \
             /p:SymbolPackageFormat=snupkg
 
