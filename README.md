@@ -1,6 +1,6 @@
 # 💰 MoneyToWords — Сумма прописью
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/nuget/v/MoneyToWords.svg)](https://www.nuget.org/packages/MoneyToWordsFSharpLib)
+[![NuGet](https://img.shields.io/nuget/v/MoneyToWordsFSharpLib.svg)](https://www.nuget.org/packages/MoneyToWordsFSharpLib)
 [![Build](https://github.com/DivinMA/MoneyToWords/actions/workflows/ci.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 
