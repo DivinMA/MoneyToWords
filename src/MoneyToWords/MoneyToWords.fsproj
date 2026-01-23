@@ -59,8 +59,11 @@
 
   <!-- Ресурсы (для NuGet) -->
   <ItemGroup>
-      <None Include="README.md" />
-      <None Include="icon.png">
+      <None Include="..\..\README.md">
+          <Pack>true</Pack>
+          <PackagePath>\</PackagePath>
+      </None>
+      <None Include="..\..\icon.png">
           <Pack>true</Pack>
           <PackagePath>\</PackagePath>
       </None>
