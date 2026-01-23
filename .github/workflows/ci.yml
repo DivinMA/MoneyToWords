@@ -61,11 +61,20 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # - name: Pack
+      #   run: |
+      #     dotnet pack --configuration Release --no-restore \
+      #       --output ./artifacts \
+      #       /p:PackageVersion=${{ replace(github.event.release.tag_name, 'v', '') }} \
+      #       /p:IncludeSymbols=true \
+      #       /p:SymbolPackageFormat=snupkg
       - name: Pack
+        env:
+          PACKAGE_VERSION: ${{ replace(github.event.release.tag_name, 'v', '') }}
         run: |
           dotnet pack --configuration Release --no-restore \
             --output ./artifacts \
-            /p:PackageVersion=${{ replace(github.event.release.tag_name, 'v', '') }} \
+            /p:PackageVersion=$PACKAGE_VERSION \
             /p:IncludeSymbols=true \
             /p:SymbolPackageFormat=snupkg
 
