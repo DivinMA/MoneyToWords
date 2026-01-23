@@ -2,7 +2,7 @@
 
   <PropertyGroup>
       <!-- Основные -->
-      <TargetFramework>net10.0</TargetFramework>
+      <TargetFramework>net9.0</TargetFramework>
       <Nullable>enable</Nullable>
       <LangVersion>latest</LangVersion>
       <ImplicitUsings>enable</ImplicitUsings>
