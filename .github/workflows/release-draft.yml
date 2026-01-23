@@ -12,7 +12,13 @@ jobs:
       contents: write
       pull-requests: read
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release Draft
+        uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
         env:
