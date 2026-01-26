@@ -1,9 +1,15 @@
 name: Release Drafter
 
 on:
-  push:
-    branches:
-      - main
+  # Запускать при:
+  pull_request:
+    types:
+      - opened      # когда PR создан
+      - reopened    # когда PR восстановлен
+      - synchronize # когда добавлены новые коммиты (push в ветку)
+  pull_request_target:
+    types:
+      - closed      # когда PR замержен — обновить черновик
 
 permissions:
   contents: write
@@ -13,11 +19,6 @@ jobs:
   update_release_draft:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create Release Draft
         uses: release-drafter/release-drafter@v6
         with:
