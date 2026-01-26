@@ -9,7 +9,7 @@ on:
     types: [ published ]
 
 jobs:
-  # 1. Сборка и тесты
+  # 1. Сборка, тесты, пакет
   build-and-test:
     runs-on: ubuntu-latest
     permissions:
@@ -23,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 🔥 Для MinVer и release-drafter
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -39,14 +39,31 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
 
-  # 2. Pack & Publish (только при релизе)
+      - name: Pack (validation only)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "📦 Validating package build"
+          dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            /p:IncludeSymbols=true \
+            /p:SymbolPackageFormat=snupkg \
+            /p:ContinuousIntegrationBuild=true \
+            /p:NoWarn=NU5128  # предупреждение о пустых фолдерах — можно игнорировать в CI
+
+      - name: List artifacts
+        if: steps.pack.outputs.PACKAGED_FILE
+        run: ls -la ./artifacts/
+
+  # 2. Pack & Publish (только при публикации релиза)
   publish:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Для загрузки в GitHub Release
-      id-token: write  # Для публикации в NuGet (если используешь OIDC)
+      contents: write
+      id-token: write
 
     steps:
       - name: Checkout
@@ -65,9 +82,7 @@ jobs:
       - name: Pack with MinVer
         id: pack
         run: |
-          echo "🔍 Tag: ${{ github.event.release.tag_name }}"
-          echo "🔖 MinVer будет использовать тег для версии"
-
+          echo "🔖 Building version for release: ${{ github.event.release.tag_name }}"
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-restore \
@@ -75,12 +90,9 @@ jobs:
             /p:IncludeSymbols=true \
             /p:SymbolPackageFormat=snupkg
 
-          # Найдём .nupkg и сохраним путь
           NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f | head -n 1)
           echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
           echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
-
-          ls -la ./artifacts/
 
       - name: Publish to NuGet.org
         run: |
@@ -91,7 +103,6 @@ jobs:
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: ${{ steps.pack.outputs.PACKAGED_FILE }}
           name: ${{ github.event.release.name }}
