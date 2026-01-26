@@ -4,7 +4,6 @@
       <!-- Основные -->
       <TargetFramework>net10.0</TargetFramework>
       <Nullable>enable</Nullable>
-      <LangVersion>latest</LangVersion>
       <ImplicitUsings>enable</ImplicitUsings>
 
       <!-- Пакет -->
@@ -15,13 +14,12 @@
       <Company>Учение - свет, ...</Company>
       <Product>MoneyToWords</Product>
       <Copyright>© 2026</Copyright>
-      <Description>Преобразование денежной суммы в строку прописью. Поддержка русского языка, DDD, производительность, локализация.</Description>
+      <Description>Converts monetary amount to words in Russian. DDD, functional, extensible, localization-ready.</Description>
       <PackageProjectUrl>https://github.com/DivinMA/MoneyToWords</PackageProjectUrl>
       <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
       <RepositoryType>git</RepositoryType>
       <PackageTags>fsharp;money;spellout;ddd;localization;ru</PackageTags>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>Первый стабильный релиз</PackageReleaseNotes>
       <PackageIcon>icon.png</PackageIcon>
       <PackageReadmeFile>README.md</PackageReadmeFile>
 
@@ -42,8 +40,9 @@
   <!-- Файлы -->
   <ItemGroup>
       <!-- Domain -->
+      <Compile Include="Domain\MoneyError.fs" />
       <Compile Include="Domain\Money.fs" />
-      <Compile Include="Domain\Language.fs" />
+      <Compile Include="Domain\Form.fs" />
 
       <!-- Application -->
       <Compile Include="Application\Declension.fs" />
@@ -54,6 +53,7 @@
       <Compile Include="Infrastructure\TextOutput.fs" />
 
       <!-- Presentation -->
+      <Compile Include="Presentation\MoneyErrors.fs" />
       <Compile Include="Presentation\MoneyToWords.fs" />
   </ItemGroup>
 
