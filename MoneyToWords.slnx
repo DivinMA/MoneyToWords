@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="examples/SimpleConsoleUI/SimpleConsoleUI.fsproj" Id="3fc0f7d9-4063-4547-a1d7-5c31b6e3336f" />
   <Project Path="src/MoneyToWords/MoneyToWords.fsproj" Id="5a3ba75c-099b-49e1-9dce-0b782b3cafb0" />
   <Project Path="tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj" />
 </Solution>
