@@ -1,15 +1,10 @@
 name: Release Drafter
 
 on:
-  # Запускать при:
   pull_request:
-    types:
-      - opened      # когда PR создан
-      - reopened    # когда PR восстановлен
-      - synchronize # когда добавлены новые коммиты (push в ветку)
-  pull_request_target:
-    types:
-      - closed      # когда PR замержен — обновить черновик
+    types: [ opened, reopened, synchronize ]
+  push:
+    branches: [ main, master ]
 
 permissions:
   contents: write
