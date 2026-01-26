@@ -169,7 +169,7 @@ jobs:
           cache: true
 
       - name: Restore dependencies (locked)
-        run: dotnet restore --locked-mode
+        run: dotnet restore --locked-mode --force-evaluate
 
       - name: Pack with MinVer (release version)
         id: pack
