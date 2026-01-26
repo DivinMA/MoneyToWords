@@ -1,40 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-      <!-- Основные -->
-      <TargetFramework>net10.0</TargetFramework>
-      <Nullable>enable</Nullable>
-      <ImplicitUsings>enable</ImplicitUsings>
-
       <!-- Пакет -->
       <PackageId>MoneyToWordsFSharpLib</PackageId>
-      <Version>1.0.0</Version>
-      <VersionPrefix>1.0.0</VersionPrefix>
-      <Authors>Divin MA</Authors>
-      <Company>Учение - свет, ...</Company>
       <Product>MoneyToWords</Product>
-      <Copyright>© 2026</Copyright>
-      <Description>Converts monetary amount to words in Russian. DDD, functional, extensible, localization-ready.</Description>
-      <PackageProjectUrl>https://github.com/DivinMA/MoneyToWords</PackageProjectUrl>
-      <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
-      <RepositoryType>git</RepositoryType>
-      <PackageTags>fsharp;money;spellout;ddd;localization;ru</PackageTags>
-      <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageIcon>icon.png</PackageIcon>
-      <PackageReadmeFile>README.md</PackageReadmeFile>
 
       <!-- Документация и отладка -->
-      <IncludeSymbols>true</IncludeSymbols>
-      <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-      <EmbedAllSources>true</EmbedAllSources>
-      <PublishRepositoryUrl>true</PublishRepositoryUrl>
       <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
-      <!-- Сборка -->
-      <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-      <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-      <Optimize>true</Optimize>
-      <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <!-- Файлы -->
@@ -56,21 +27,4 @@
       <Compile Include="Presentation\MoneyErrors.fs" />
       <Compile Include="Presentation\MoneyToWords.fs" />
   </ItemGroup>
-
-  <!-- Ресурсы (для NuGet) -->
-  <ItemGroup>
-      <None Include="..\..\README.md">
-          <Pack>true</Pack>
-          <PackagePath>\</PackagePath>
-      </None>
-      <None Include="..\..\icon.png">
-          <Pack>true</Pack>
-          <PackagePath>\</PackagePath>
-      </None>
-  </ItemGroup>
-
-  <ItemGroup>
-      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
-  </ItemGroup>
-
 </Project>
