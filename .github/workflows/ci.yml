@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-version: ['10.0.x']
+        dotnet-version: ['10.0.102']
 
     steps:
       - name: Checkout
@@ -64,7 +64,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-version: ['10.0.x']
+        dotnet-version: ['10.0.102']
 
     steps:
       - name: Download built artifacts
@@ -107,7 +107,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet-version: ['10.0.x']
+        dotnet-version: ['10.0.102']
 
     steps:
       - name: Download built artifacts
@@ -165,7 +165,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.102'
           cache: true
 
       - name: Restore dependencies (locked)
