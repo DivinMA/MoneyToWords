@@ -1,6 +1,6 @@
 name: 🐞 Сообщить об ошибке
 description: Опишите баг, который вы нашли
-title: "Баг: "
+title: "Bug: "
 labels: bug
 assignees: DivinMA
 body:
