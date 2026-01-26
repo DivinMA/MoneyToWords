@@ -15,45 +15,41 @@
   <!-- ================================================================= -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <!-- ================================================================= -->
-  <!-- 2. МЕТАДАННЫЕ -->
+  <!-- 2. МЕТАДАННЫЕ ПАКЕТА -->
   <!-- ================================================================= -->
   <PropertyGroup>
+    <PackageId>MoneyToWordsFSharpLib</PackageId>
+    <Product>MoneyToWords</Product>
     <Authors>Divin MA</Authors>
-    <Company>Учение - свет, ...</Company>
-    <Copyright>© 2026</Copyright>
+    <Company>Divin MA</Company>
+    <Copyright>© 2026 Divin MA</Copyright>
+    <Description>Converts monetary amount to words in Russian. DDD, functional, extensible, localization-ready.</Description>
+    <PackageProjectUrl>https://github.com/DivinMA/MoneyToWords</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
-    <!-- Используем файл лицензии — стабильно, без багов -->
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-  </PropertyGroup>
-
-  <!-- ================================================================= -->
-  <!-- 3. АТРИБУТЫ ПАКЕТА -->
-  <!-- ================================================================= -->
-  <PropertyGroup>
-    <PackageTags>fsharp;money;spellout;ddd;localization;ru</PackageTags>
-    <Description>Converts monetary amount to words in Russian. DDD, functional, extensible, localization-ready.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EmbedAllSources>true</EmbedAllSources>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageTags>fsharp;money;spellout;ddd;localization;ru;currency;number-to-words</PackageTags>
   </PropertyGroup>
 
   <!-- ================================================================= -->
-  <!-- 4. ОПТИМИЗАЦИЯ -->
+  <!-- 3. ОПЦИИ СБОРКИ И УПАКОВКИ -->
   <!-- ================================================================= -->
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedAllSources>true</EmbedAllSources>
+    <IncludeSymbols>false</IncludeSymbols>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -61,7 +57,7 @@
   </PropertyGroup>
 
   <!-- ================================================================= -->
-  <!-- 5. ПУТИ -->
+  <!-- 4. ПУТИ -->
   <!-- ================================================================= -->
   <PropertyGroup>
     <BaseOutputPath>$(RepoRoot)bin\</BaseOutputPath>
@@ -69,7 +65,7 @@
   </PropertyGroup>
 
   <!-- ================================================================= -->
-  <!-- 6. ПРЕДУПРЕЖДЕНИЯ -->
+  <!-- 5. ПРЕДУПРЕЖДЕНИЯ -->
   <!-- ================================================================= -->
   <PropertyGroup>
     <NoWarn>$(NoWarn);1591;1592;1594;1595;1573</NoWarn>
@@ -78,7 +74,7 @@
   </PropertyGroup>
 
   <!-- ================================================================= -->
-  <!-- 7. РЕСУРСЫ В ПАКЕТЕ -->
+  <!-- 6. РЕСУРСЫ В ПАКЕТЕ -->
   <!-- ================================================================= -->
   <ItemGroup>
     <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
@@ -88,14 +84,14 @@
   </ItemGroup>
 
   <!-- ================================================================= -->
-  <!-- 8. SOURCE LINK -->
+  <!-- 7. SOURCE LINK -->
   <!-- ================================================================= -->
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- ================================================================= -->
-  <!-- 9. MINVER — АВТОВЕРСИОНИРОВАНИЕ ЧЕРЕЗ Git-теги -->
+  <!-- 8. MINVER — АВТОВЕРСИОНИРОВАНИЕ -->
   <!-- ================================================================= -->
   <ItemGroup>
     <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
@@ -108,12 +104,11 @@
   </PropertyGroup>
 
   <!-- ================================================================= -->
-  <!-- 10. ДИАГНОСТИКА -->
+  <!-- 9. ДИАГНОСТИКА -->
   <!-- ================================================================= -->
   <Target Name="LogPackagingInfo" BeforeTargets="Build;Pack">
     <Message Text="📦 RepoRoot: $(RepoRoot)" Importance="high" />
     <Message Text="📁 Output: $(BaseOutputPath)" Importance="high" />
     <Message Text="🔖 Version: $(MinVerVersion)" Importance="high" />
   </Target>
-
 </Project>

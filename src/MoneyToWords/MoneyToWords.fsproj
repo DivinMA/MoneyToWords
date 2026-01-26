@@ -1,30 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-      <!-- Пакет -->
-      <PackageId>MoneyToWordsFSharpLib</PackageId>
-      <Product>MoneyToWords</Product>
+    
+    <ItemGroup>
+        <!-- Domain -->
+        <Compile Include="Domain\MoneyError.fs" />
+        <Compile Include="Domain\Money.fs" />
+        <Compile Include="Domain\Form.fs" />
 
-      <!-- Документация и отладка -->
-      <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
+        <!-- Application -->
+        <Compile Include="Application\Declension.fs" />
+        <Compile Include="Application\NumberToWords.fs" />
 
-  <!-- Файлы -->
-  <ItemGroup>
-      <!-- Domain -->
-      <Compile Include="Domain\MoneyError.fs" />
-      <Compile Include="Domain\Money.fs" />
-      <Compile Include="Domain\Form.fs" />
+        <!-- Infrastructure -->
+        <Compile Include="Infrastructure\RussianRules.fs" />
+        <Compile Include="Infrastructure\TextOutput.fs" />
 
-      <!-- Application -->
-      <Compile Include="Application\Declension.fs" />
-      <Compile Include="Application\NumberToWords.fs" />
+        <!-- Presentation -->
+        <Compile Include="Presentation\MoneyErrors.fs" />
+        <Compile Include="Presentation\MoneyToWords.fs" />
+    </ItemGroup>
 
-      <!-- Infrastructure -->
-      <Compile Include="Infrastructure\RussianRules.fs" />
-      <Compile Include="Infrastructure\TextOutput.fs" />
-
-      <!-- Presentation -->
-      <Compile Include="Presentation\MoneyErrors.fs" />
-      <Compile Include="Presentation\MoneyToWords.fs" />
-  </ItemGroup>
 </Project>
