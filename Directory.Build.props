@@ -44,6 +44,7 @@
         <NoWarn>$(NoWarn);1591;1592;1594;1595;1573</NoWarn>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
 
     <!-- ================================================================= -->

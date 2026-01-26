@@ -34,8 +34,8 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
           cache: true
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore dependencies (locked)
+        run: dotnet restore --locked-mode
 
       - name: Build project
         run: |
@@ -168,8 +168,8 @@ jobs:
           dotnet-version: '10.0.x'
           cache: true
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore dependencies (locked)
+        run: dotnet restore --locked-mode
 
       - name: Pack with MinVer (release version)
         id: pack
