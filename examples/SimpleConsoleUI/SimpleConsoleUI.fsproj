@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Authors>Divin MA</Authors>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

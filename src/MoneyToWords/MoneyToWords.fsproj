@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     
+    <PropertyGroup>
+        <!-- Только здесь! -->
+        <PackageId>MoneyToWordsFSharpLib</PackageId>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    
     <ItemGroup>
         <!-- Domain -->
         <Compile Include="Domain\MoneyError.fs" />
