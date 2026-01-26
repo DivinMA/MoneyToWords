@@ -9,12 +9,15 @@ on:
     types: [ published ]
 
 jobs:
-  # 1. Сборка, тесты, пакет
-  build-and-test:
+  # ===================================================================
+  # 1. СБОРКА (Build) — всегда
+  # ===================================================================
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
+
     strategy:
       matrix:
         dotnet-version: ['10.0.x']
@@ -25,24 +28,102 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup .NET with caching
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+          cache: nuget
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build project
+        run: |
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-incremental \
+            --no-restore
+
+      - name: Upload Artifacts (for downstream jobs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-artifacts
+          path: |
+            src/MoneyToWords/bin/Release/
+            src/MoneyToWords/obj/Release/
+          retention-days: 5
+          if-no-files-found: error
+
+
+  # ===================================================================
+  # 2. ТЕСТИРОВАНИЕ (Test) — после успешной сборки
+  # ===================================================================
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        dotnet-version: ['10.0.x']
+
+    steps:
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-artifacts
+          path: src/MoneyToWords/
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
-
-      - name: Pack (validation only)
-        if: github.event_name == 'pull_request'
+      - name: Run tests
         run: |
-          echo "📦 Validating package build"
+          dotnet test src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger trx
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/TestResults/*.trx
+            !**/node_modules/**
+          retention-days: 5
+
+
+  # ===================================================================
+  # 3. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
+  # ===================================================================
+  pack-validation:
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        dotnet-version: ['10.0.x']
+
+    steps:
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-artifacts
+          path: src/MoneyToWords/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Pack for validation
+        run: |
+          echo "📦 Validating package structure"
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-build \
@@ -50,23 +131,33 @@ jobs:
             /p:IncludeSymbols=true \
             /p:SymbolPackageFormat=snupkg \
             /p:ContinuousIntegrationBuild=true \
-            /p:NoWarn=NU5128  # предупреждение о пустых фолдерах — можно игнорировать в CI
+            /p:NoWarn=NU5128
 
-      - name: List artifacts
-        if: steps.pack.outputs.PACKAGED_FILE
-        run: ls -la ./artifacts/
+      - name: List created packages
+        run: |
+          ls -la ./artifacts/
 
-  # 2. Pack & Publish (только при публикации релиза)
+      - name: Upload NuPkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-package
+          path: ./artifacts/*.nupkg
+          if-no-files-found: warn
+
+
+  # ===================================================================
+  # 4. ПУБЛИКАЦИЯ (Publish) — только при публикации релиза
+  # ===================================================================
   publish:
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: build-and-test
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
+      id-token: write  # Для OIDC и безопасного доступа
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -75,14 +166,15 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '10.0.x'
+          cache: nuget
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore
 
-      - name: Pack with MinVer
+      - name: Pack with MinVer (release version)
         id: pack
         run: |
-          echo "🔖 Building version for release: ${{ github.event.release.tag_name }}"
+          echo "🔖 Building release version: ${{ github.event.release.tag_name }}"
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-restore \
@@ -90,7 +182,12 @@ jobs:
             /p:IncludeSymbols=true \
             /p:SymbolPackageFormat=snupkg
 
-          NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f | head -n 1)
+          NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f -print -quit)
+          if [ -z "$NUPKG_FILE" ]; then
+            echo "❌ No .nupkg file created"
+            exit 1
+          fi
+
           echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
           echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
 
@@ -101,7 +198,7 @@ jobs:
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --skip-duplicate
 
-      - name: Upload to GitHub Release
+      - name: Attach package to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.pack.outputs.PACKAGED_FILE }}
