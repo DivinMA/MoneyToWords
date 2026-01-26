@@ -11,22 +11,24 @@ updates:
       time: "04:00"
       timezone: Etc/UTC
     open-pull-requests-limit: 5
-    versioning-strategy: "lockfile-only"
+    # versioning-strategy: "lockfile-only"  # ❌ Удалено — не нужно в v2
+
     ignore:
-      # Игнорировать бета-, превью-, RC-версии
-      - dependency-name: "FsCheck"
+      # Игнорировать ВСЕ бета-, превью-, RC-версии (глобально)
+      - dependency-name: "*"
         versions:
-          - "3.*-beta*"
-          - "3.*-rc*"
-          - "3.*-preview*"
-      - dependency-name: "xunit*"
-        versions:
-          - "3.*-beta*"
-          - "3.*-rc*"
-          - "3.*-preview*"
+          - "*-beta*"
+          - "*-rc*"
+          - "*-preview*"
+          - "*-alpha*"
+
       # Не обновлять FSharp.Core до новой мажорной версии автоматически
       - dependency-name: "FSharp.Core"
         update-types: ["version-update:semver-major"]
+
+      # При необходимости — исключить другие пакеты
+      # - dependency-name: "Microsoft.SourceLink.GitHub"
+      #   update-types: ["version-update:semver-major"]
 
   # 2. GitHub Actions
   - package-ecosystem: "github-actions"
@@ -37,7 +39,7 @@ updates:
       time: "03:00"
       timezone: Etc/UTC
     ignore:
-      # Игнорировать бета-версии экшенов (если нужно)
+      # Игнорировать бета-версии экшенов
       - dependency-name: "actions/*"
         versions:
           - "*-beta"
