@@ -1,26 +1,20 @@
-# .github/workflows/ci.yml
 name: CI/CD
 
-# Запускать при:
 on:
-  # Push в основную ветку
   push:
-    branches:
-      - main
-      - master
-  # Pull Request
+    branches: [ main, master ]
   pull_request:
-    branches:
-      - main
-      - master
-  # При создании тега — например, v1.0.0
+    branches: [ main, master ]
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   # 1. Сборка и тесты
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     strategy:
       matrix:
         dotnet-version: ['10.0.x']
@@ -28,13 +22,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 🔥 Для MinVer и release-drafter
 
-      - name: Setup .NET ${{ matrix.dotnet-version }}
+      - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore
 
       - name: Build
@@ -43,15 +39,20 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
 
-  # 2. Сборка пакета (только для релизов)
-  pack:
+  # 2. Pack & Publish (только при релизе)
+  publish:
     if: github.event_name == 'release' && github.event.action == 'published'
-    runs-on: ubuntu-latest
     needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Для загрузки в GitHub Release
+      id-token: write  # Для публикации в NuGet (если используешь OIDC)
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -61,53 +62,38 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Pack
+      - name: Pack with MinVer
+        id: pack
         run: |
-          # 🔍 Отладка: покажем, какой тег пришёл
-          echo "🔍 Исходный tag: ${{ github.event.release.tag_name }}"
+          echo "🔍 Tag: ${{ github.event.release.tag_name }}"
+          echo "🔖 MinVer будет использовать тег для версии"
 
-          version=${{ github.event.release.tag_name }}
-          version=${version#v}
-
-          echo "📦 Версия пакета: $version"
-
-          dotnet pack --configuration Release --no-restore \
+          dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-restore \
             --output ./artifacts \
-            /p:PackageVersion=$version \
             /p:IncludeSymbols=true \
             /p:SymbolPackageFormat=snupkg
 
-      - name: Upload NuGet package
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-packages
-          path: ./artifacts/*.nupkg
-          if-no-files-found: error
+          # Найдём .nupkg и сохраним путь
+          NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f | head -n 1)
+          echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
+          echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
 
-      - name: Upload Symbol package
-        uses: actions/upload-artifact@v4
-        with:
-          name: symbol-packages
-          path: ./artifacts/*.snupkg
-          if-no-files-found: warn
-
-  # 3. Создание GitHub Release
-  publish-nuget:
-    if: github.event_name == 'release' && github.event.action == 'published'
-    needs: pack
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: nuget-packages
+          ls -la ./artifacts/
 
       - name: Publish to NuGet.org
         run: |
-          for pkg in *.nupkg; do
-            dotnet nuget push "$pkg" \
-              --source https://api.nuget.org/v3/index.json \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
-              --skip-duplicate
-          done
+          dotnet nuget push "${{ steps.pack.outputs.PACKAGED_FILE }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --skip-duplicate
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ steps.pack.outputs.PACKAGED_FILE }}
+          name: ${{ github.event.release.name }}
+          body: ${{ github.event.release.body }}
+          token: ${{ secrets.GITHUB_TOKEN }}
