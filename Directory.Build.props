@@ -116,4 +116,10 @@
         <Message Text="📁 Output: $(BaseOutputPath)" Importance="high" />
         <Message Text="🔖 Version: $(MinVerVersion)" Importance="high" />
     </Target>
+
+    <!-- ================================================================= -->
+    <!-- 10. ОТКЛЮЧЕНИЕ NU1403 ДЛЯ FSharp.Core (preview-SDK) -->
+    <!-- ================================================================= -->
+    <PackageReference Update="FSharp.Core" NoWarn="NU1403" />
+
 </Project>
