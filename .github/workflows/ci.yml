@@ -86,7 +86,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: built-artifacts
-          path: src/MoneyToWords/  # артефакты кладутся сюда
+          path: src/MoneyToWords/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -99,17 +99,21 @@ jobs:
             --configuration Release \
             --no-build \
             --verbosity normal \
-            --logger trx
+            --logger "trx;LogFileName=TestResults/results.trx"
+
+      - name: Find .trx files (debug)
+        run: |
+          echo "🔍 Searching for .trx files..."
+          find . -name "*.trx" -exec ls -la {} \;
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: |
-            **/TestResults/*.trx
-            !**/node_modules/**
+          path: TestResults/results.trx
           retention-days: 5
+
 
   # ===================================================================
   # 3. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
@@ -124,6 +128,9 @@ jobs:
         dotnet-version: ['10.0.102']
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download built artifacts
         uses: actions/download-artifact@v4
         with:
