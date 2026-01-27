@@ -1,76 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+    
+    <PropertyGroup>
+        <!-- Только здесь! -->
+        <PackageId>MoneyToWordsFSharpLib</PackageId>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <!-- Domain -->
+        <Compile Include="Domain\MoneyError.fs" />
+        <Compile Include="Domain\Money.fs" />
+        <Compile Include="Domain\Form.fs" />
 
-  <PropertyGroup>
-      <!-- Основные -->
-      <TargetFramework>net10.0</TargetFramework>
-      <Nullable>enable</Nullable>
-      <LangVersion>latest</LangVersion>
-      <ImplicitUsings>enable</ImplicitUsings>
+        <!-- Application -->
+        <Compile Include="Application\Declension.fs" />
+        <Compile Include="Application\NumberToWords.fs" />
 
-      <!-- Пакет -->
-      <PackageId>MoneyToWordsFSharpLib</PackageId>
-      <Version>1.0.0</Version>
-      <VersionPrefix>1.0.0</VersionPrefix>
-      <Authors>Divin MA</Authors>
-      <Company>Учение - свет, ...</Company>
-      <Product>MoneyToWords</Product>
-      <Copyright>© 2026</Copyright>
-      <Description>Преобразование денежной суммы в строку прописью. Поддержка русского языка, DDD, производительность, локализация.</Description>
-      <PackageProjectUrl>https://github.com/DivinMA/MoneyToWords</PackageProjectUrl>
-      <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
-      <RepositoryType>git</RepositoryType>
-      <PackageTags>fsharp;money;spellout;ddd;localization;ru</PackageTags>
-      <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>Первый стабильный релиз</PackageReleaseNotes>
-      <PackageIcon>icon.png</PackageIcon>
-      <PackageReadmeFile>README.md</PackageReadmeFile>
+        <!-- Infrastructure -->
+        <Compile Include="Infrastructure\RussianRules.fs" />
+        <Compile Include="Infrastructure\TextOutput.fs" />
 
-      <!-- Документация и отладка -->
-      <IncludeSymbols>true</IncludeSymbols>
-      <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-      <EmbedAllSources>true</EmbedAllSources>
-      <PublishRepositoryUrl>true</PublishRepositoryUrl>
-      <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
-      <!-- Сборка -->
-      <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-      <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-      <Optimize>true</Optimize>
-      <DebugType>portable</DebugType>
-  </PropertyGroup>
-
-  <!-- Файлы -->
-  <ItemGroup>
-      <!-- Domain -->
-      <Compile Include="Domain\Money.fs" />
-      <Compile Include="Domain\Language.fs" />
-
-      <!-- Application -->
-      <Compile Include="Application\Declension.fs" />
-      <Compile Include="Application\NumberToWords.fs" />
-
-      <!-- Infrastructure -->
-      <Compile Include="Infrastructure\RussianRules.fs" />
-      <Compile Include="Infrastructure\TextOutput.fs" />
-
-      <!-- Presentation -->
-      <Compile Include="Presentation\MoneyToWords.fs" />
-  </ItemGroup>
-
-  <!-- Ресурсы (для NuGet) -->
-  <ItemGroup>
-      <None Include="..\..\README.md">
-          <Pack>true</Pack>
-          <PackagePath>\</PackagePath>
-      </None>
-      <None Include="..\..\icon.png">
-          <Pack>true</Pack>
-          <PackagePath>\</PackagePath>
-      </None>
-  </ItemGroup>
-
-  <ItemGroup>
-      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
-  </ItemGroup>
+        <!-- Presentation -->
+        <Compile Include="Presentation\MoneyErrors.fs" />
+        <Compile Include="Presentation\MoneyToWords.fs" />
+    </ItemGroup>
 
 </Project>

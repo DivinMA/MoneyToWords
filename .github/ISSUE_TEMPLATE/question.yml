@@ -1,6 +1,6 @@
 name: ❓ Задать вопрос
 description: Не понимаете, как что-то работает?
-title: "Вопрос: "
+title: "Question: "
 labels: question
 assignees: DivinMA
 body:

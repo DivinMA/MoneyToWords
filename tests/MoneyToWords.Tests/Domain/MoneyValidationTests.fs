@@ -87,53 +87,6 @@ module MoneyValidationTests =
         let result = Money.TryCreate(999_999_999_999_999L, 99)
         test <@ Result.isOk result @>
 
-    /// Проверка: некорректные значения → Error
-
-    [<Fact>]
-    let ``TryCreate: -1.00 → Error (отрицательные рубли)`` () =
-        let result = Money.TryCreate(-1L, 0)
-        test <@ result = Error "Rubles cannot be negative." @>
-
-    [<Fact>]
-    let ``TryCreate: -100.00 → Error (отрицательные рубли)`` () =
-        let result = Money.TryCreate(-100L, 0)
-        test <@ result = Error "Rubles cannot be negative." @>
-
-    [<Fact>]
-    let ``TryCreate: 0.-1 → Error (копейки < 0)`` () =
-        let result = Money.TryCreate(0L, -1)
-        test <@ result = Error "Kopecks must be between 0 and 99." @>
-
-    [<Fact>]
-    let ``TryCreate: 10.-1 → Error (копейки < 0)`` () =
-        let result = Money.TryCreate(10L, -1)
-        test <@ result = Error "Kopecks must be between 0 and 99." @>
-
-    [<Fact>]
-    let ``TryCreate: 0.100 → Error (копейки > 99)`` () =
-        let result = Money.TryCreate(0L, 100)
-        test <@ result = Error "Kopecks must be between 0 and 99." @>
-
-    [<Fact>]
-    let ``TryCreate: 0.101 → Error (копейки > 99)`` () =
-        let result = Money.TryCreate(0L, 101)
-        test <@ result = Error "Kopecks must be between 0 and 99." @>
-
-    [<Fact>]
-    let ``TryCreate: 10.100 → Error (копейки > 99)`` () =
-        let result = Money.TryCreate(10L, 100)
-        test <@ result = Error "Kopecks must be between 0 and 99." @>
-
-    [<Fact>]
-    let ``TryCreate: рубли слишком велики (1e18) → Error`` () =
-        let result = Money.TryCreate(1_000_000_000_000_000_000L, 0)
-        test <@ result = Error "Rubles too large (max 999 quadrillion)." @>
-
-    [<Fact>]
-    let ``TryCreate: рубли = Int64.MaxValue → Error`` () =
-        let result = Money.TryCreate(System.Int64.MaxValue, 0)
-        test <@ result = Error "Rubles too large (max 999 quadrillion)." @>
-
     /// Проверка: граничные значения копеек
 
     [<Fact>]

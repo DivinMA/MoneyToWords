@@ -1,45 +1,80 @@
-﻿// Presentation/MoneyToWords.fs
-
-namespace MoneyToWords.Presentation
+﻿namespace MoneyToWords.Presentation
 
 open MoneyToWords.Domain
 open MoneyToWords.Application
 open MoneyToWords.Infrastructure
 
 /// <summary>
-/// Основной API библиотеки.
+/// Primary public API for converting monetary amounts into Russian words.
+/// Formats a <see cref="Money" /> value into a natural language string like "сто двадцать три рубля и сорок пять копеек".
 /// </summary>
+/// <remarks>
+/// This module is part of the <b>Presentation</b> layer and uses:
+/// <list type="bullet">
+///   <item><see cref="RussianRules" /> for linguistic rules</item>
+///   <item><see cref="NumberToWords.toWordList" /> for number-to-words conversion</item>
+///   <item><see cref="Declension.form" /> for correct noun declension</item>
+///   <item><see cref="TextOutput.joinWords" /> and <see cref="TextOutput.withConjunction" /> for efficient string building</item>
+/// </list>
+/// 
+/// The output always includes kopecks, even if zero (" и ноль копеек").
+/// For conditional kopecks (e.g., omit "ноль копеек"), compose with custom logic.
+/// 
+/// This function is pure, total (for valid input), and designed for reuse in UI, CLI, or API layers.
+/// </remarks>
 [<RequireQualifiedAccess>]
 module MoneyToWords =
 
     /// <summary>
-    /// Преобразует денежную сумму в строку прописью на русском языке.
-    /// Всегда включает " и ноль копеек".
+    /// Converts a <see cref="Money" /> amount into its Russian textual representation.
     /// </summary>
-    /// <param name="money">Денежная сумма</param>
-    /// <returns>Строка: "один рубль и одна копейка"</returns>
-    /// <exception cref="System.ArgumentException">Если сумма недопустима</exception>
+    /// <param name="money">The validated monetary amount to format.</param>
+    /// <returns>
+    /// A string representing the amount in words, e.g.:
+    /// <list type="bullet">
+    ///   <item>"один рубль и одна копейка"</item>
+    ///   <item>"двести рублей и ноль копеек"</item>
+    ///   <item>"ноль рублей и пятнадцать копеек"</item>
+    /// </list>
+    /// </returns>
     /// <example>
     /// <code>
     /// let money = Money.TryCreate(123L, 45).Value
     /// let text = MoneyToWords.toWords money
     /// // → "сто двадцать три рубля и сорок пять копеек"
+    /// 
+    /// let zeroKopecks = Money.TryCreate(1L, 0).Value
+    /// let text2 = MoneyToWords.toWords zeroKopecks
+    /// // → "один рубль и ноль копеек"
     /// </code>
     /// </example>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown if <paramref name="money" /> is not valid (though this should not occur if created via <see cref="Money.TryCreate(int64, int)" />).
+    /// Included as a safety guard.
+    /// </exception>
+    /// <seealso cref="Money.TryCreate(int64, int)" />
+    /// <seealso cref="MoneyErrors.toRussian" />
     let toWords (money: Money) : string =
-        let rules = RussianRules.Value
-
         // === Рубли ===
-        let rubleWords = NumberToWords.toWordList rules (money.Rubles.Value)
-        let rubleForm = Declension.form rules.Currency (money.Rubles.Value)
+        let rubleWords = NumberToWords.toWordList
+                           RussianRules.unitMasc
+                           RussianRules.unitFem
+                           RussianRules.teen
+                           RussianRules.ten
+                           RussianRules.hundred
+                           RussianRules.ranks
+                           money.Rubles.Value
+
+        let rubleForm = Declension.form RussianRules.currency (money.Rubles.Value)
         let rubleText = TextOutput.joinWords (rubleWords @ [rubleForm])
 
-        // === Копейки — обрабатываем отдельно с женским родом ===
+        // === Копейки ===
         let kopecks = int money.Kopecks.Value
-        let kopeckForm = Declension.form rules.Subunit (int64 kopecks)
+        let kopeckForm = Declension.form RussianRules.subunit (int64 kopecks)
 
         let kopeckText =
-            if kopecks = 0 then "ноль копеек"
+            if kopecks = 0 then
+                RussianRules.zeroSubunit
             else
                 let teen = kopecks % 100
                 let t = teen / 10
@@ -47,13 +82,21 @@ module MoneyToWords =
                 let words =
                     [
                         if teen >= 10 && teen <= 19 then
-                            yield rules.Teens.[teen - 10]
+                            match RussianRules.teen teen with
+                            | Some word -> yield word
+                            | None -> ()
                         else
-                            if t > 0 then yield rules.Tens.[t]
-                            if u > 0 then yield rules.UnitsFem.[u]  // ✅ UnitsFem — "одна", "две"
+                            if t > 0 then
+                                match RussianRules.ten t with
+                                | Some word -> yield word
+                                | None -> ()
+                            if u > 0 then
+                                match RussianRules.unitFem u with
+                                | Some word -> yield word
+                                | None -> ()
                     ]
                 let joined = TextOutput.joinWords words
-                sprintf "%s %s" joined kopeckForm  // → "одна копейка", "две копейки"
+                sprintf "%s %s" joined kopeckForm
 
         // === Сборка результата ===
-        TextOutput.withConjunction rules.Conjunction rubleText kopeckText
+        TextOutput.withConjunction RussianRules.conjunction rubleText kopeckText

@@ -1,23 +1,21 @@
 name: Release Drafter
 
 on:
+  # Обновляем черновик при:
   push:
-    branches:
-      - main
+    branches: [ main, master ]          # мерж в main
+  pull_request:
+    types: [ opened, reopened, synchronize ]  # обновление PR
+
+permissions:
+  contents: write
+  pull-requests: read
 
 jobs:
   update_release_draft:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release Draft
+      - name: 📝 Update Release Draft
         uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
