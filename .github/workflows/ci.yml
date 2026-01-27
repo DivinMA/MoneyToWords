@@ -34,8 +34,6 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
           cache: false
 
-      #- name: Restore dependencies (locked)
-      #  run: dotnet restore --locked-mode
       - name: Restore dependencies (with logging)
         run: |
           echo "🔍 Current directory: $(pwd)"
@@ -44,7 +42,7 @@ jobs:
           echo "🔒 Found packages.lock.json files:"
           find . -name "packages.lock.json" -type f -exec ls -la {} \;
           echo "📦 Starting dotnet restore..."
-          dotnet restore --force-evaluate # временно без --locked-mode
+          dotnet restore --force-evaluate
 
       - name: Build project
         run: |
@@ -53,22 +51,7 @@ jobs:
             --no-incremental \
             --no-restore
 
-      - name: Upload Artifacts (for downstream jobs)
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-artifacts
-          path: |
-            src/MoneyToWords/bin/Release/
-            src/MoneyToWords/obj/Release/
-          retention-days: 5
-          if-no-files-found: error
-      - name: Build project
-        run: |
-          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
-            --configuration Release \
-            --no-restore
-
-      - name: Find built DLL
+      - name: Find built DLL (debug)
         run: |
           echo "🔍 Searching for MoneyToWords.dll..."
           find . -name "MoneyToWords.dll" -exec ls -la {} \;
@@ -82,6 +65,7 @@ jobs:
             obj/*/Release/
           retention-days: 5
           if-no-files-found: error
+
 
   # ===================================================================
   # 2. ТЕСТИРОВАНИЕ (Test) — после успешной сборки
@@ -99,6 +83,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: built-artifacts
+          # Важно: артефакты загружаются в корень, но проект ожидает их в src/MoneyToWords/
           path: src/MoneyToWords/
 
       - name: Setup .NET
@@ -182,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write  # Для OIDC и безопасного доступа
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -196,8 +181,8 @@ jobs:
           dotnet-version: '10.0.102'
           cache: true
 
-      - name: Restore dependencies (locked)
-        run: dotnet restore # --locked-mode --force-evaluate
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Pack with MinVer (release version)
         id: pack
