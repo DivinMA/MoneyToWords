@@ -44,7 +44,7 @@ jobs:
           echo "🔒 Found packages.lock.json files:"
           find . -name "packages.lock.json" -type f -exec ls -la {} \;
           echo "📦 Starting dotnet restore..."
-          dotnet restore  # временно без --locked-mode
+          dotnet restore --force-evaluate # временно без --locked-mode
 
       - name: Build project
         run: |
