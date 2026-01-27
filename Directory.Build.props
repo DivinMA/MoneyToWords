@@ -50,7 +50,7 @@
 
     <!-- Включаем RestoreLockedMode только вне CI -->
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
-        <RestoreLockedMode>true</RestoreLockedMode>
+        <RestoreLockedMode>false</RestoreLockedMode>
     </PropertyGroup>
 
     <!-- ================================================================= -->

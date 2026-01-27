@@ -32,7 +32,8 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-          cache: false
+          cache: true
+
       # =============== ДОБАВЛЕНА ДИАГНОСТИКА ===============
       - name: "🧪 Diagnostics: FSharp.Core Source Check"
         run: |
