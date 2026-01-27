@@ -45,12 +45,12 @@
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
     </PropertyGroup>
 
     <!-- Включаем RestoreLockedMode только вне CI -->
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
         <RestoreLockedMode>false</RestoreLockedMode>
+        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
     </PropertyGroup>
 
     <!-- ================================================================= -->
