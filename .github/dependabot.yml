@@ -1,20 +1,25 @@
-# .github/dependabot.yml
 version: 2
 
 updates:
   # 1. NuGet-пакеты
   - package-ecosystem: "nuget"
-    directory: "/"
+    directory: "/src/MoneyToWords"  # ✅ Точнее путь к .fsproj
+    target-branch: "main"          # ✅ Целевая ветка
     schedule:
       interval: "weekly"
       day: "monday"
       time: "04:00"
       timezone: Etc/UTC
     open-pull-requests-limit: 5
-    # versioning-strategy: "lockfile-only"  # ❌ Удалено — не нужно в v2
+    rebase-strategy: disabled      # ✅ Не перебазировать автоматически
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    assignees:
+      - DivinMA
 
     ignore:
-      # Игнорировать ВСЕ бета-, превью-, RC-версии (глобально)
+      # Игнорировать все превью-версии
       - dependency-name: "*"
         versions:
           - "*-beta*"
@@ -22,24 +27,31 @@ updates:
           - "*-preview*"
           - "*-alpha*"
 
-      # Не обновлять FSharp.Core до новой мажорной версии автоматически
+      # Не обновлять FSharp.Core до мажорной версии
       - dependency-name: "FSharp.Core"
         update-types: ["version-update:semver-major"]
 
-      # При необходимости — исключить другие пакеты
-      # - dependency-name: "Microsoft.SourceLink.GitHub"
-      #   update-types: ["version-update:semver-major"]
+      # Не обновлять SourceLink часто (только мажор)
+      - dependency-name: "Microsoft.SourceLink.GitHub"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
 
   # 2. GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "main"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "03:00"
       timezone: Etc/UTC
+    rebase-strategy: disabled
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    assignees:
+      - DivinMA
+
     ignore:
-      # Игнорировать бета-версии экшенов
       - dependency-name: "actions/*"
         versions:
           - "*-beta"
