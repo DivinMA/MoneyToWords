@@ -127,5 +127,17 @@
         <!-- Отключаем NU1403 для FSharp.Core — он встроен в SDK и может отличаться от nuget.org -->
         <PackageReference Update="FSharp.Core" NoWarn="NU1403" />
     </ItemGroup>
+
+    <!-- ================================================================= -->
+    <!-- 11. КОНФИГУРАЦИЯ ПО УМОЛЧАНИЮ -->
+    <!-- ================================================================= -->
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+        <Configuration>Release</Configuration>
+    </PropertyGroup>
+
+    <!-- Опционально: локально тоже Release по умолчанию -->
+    <PropertyGroup Condition="'$(Configuration)' == ''">
+        <Configuration>Release</Configuration>
+    </PropertyGroup>
     
 </Project>
