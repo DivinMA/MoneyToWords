@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main, master, 'feature/**' ]
+    branches: [ main, master ] # 'feature/**' - для проверки срабатывания CI/CD
   pull_request:
     branches: [ main, master ]
   release:
