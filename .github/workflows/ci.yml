@@ -95,11 +95,13 @@ jobs:
 
       - name: Run tests
         run: |
+          # Явно создаём папку и указываем путь
+          mkdir -p TestResults
           dotnet test src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-build \
             --verbosity normal \
-            --logger "trx;LogFileName=TestResults/results.trx"
+            --logger "trx;LogFileName=$(pwd)/TestResults/results.trx"
 
       - name: Find .trx files (debug)
         run: |
