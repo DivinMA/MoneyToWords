@@ -33,6 +33,26 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
           cache: false
+      # =============== ДОБАВЛЕНА ДИАГНОСТИКА ===============
+      - name: "🧪 Diagnostics: FSharp.Core Source Check"
+        run: |
+          echo "🔍 === Диагностика: откуда берётся FSharp.Core? ==="
+
+          echo "1. Версия .NET SDK:"
+          dotnet --version
+
+          echo "2. Где находится FSharp.Core в SDK?"
+          find /usr/share/dotnet -name "FSharp.Core.dll" -exec ls -la {} \; 2>/dev/null || echo "Не найдено в SDK"
+
+          echo "3. Есть ли FSharp.Core в глобальном кэше NuGet?"
+          find ~/.nuget/packages -name "FSharp.Core" -type d 2>/dev/null || echo "Нет в global-packages"
+
+          echo "4. Просмотрим, какой FSharp.Core будет использоваться при сборке"
+          dotnet msbuild -nologo -verbosity:minimal /pp:preprocessed.proj
+          grep -i "FSharp.Core" preprocessed.proj | head -10 || echo "Не найдено в MSBuild evaluation"
+
+          echo "5. Содержимое nuget.config (если есть)"
+          cat ./NuGet.Config || echo "NuGet.Config не найден"
 
       - name: Restore dependencies (with logging)
         run: |
