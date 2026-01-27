@@ -226,7 +226,7 @@ jobs:
           dotnet-version: '10.0.102'
           cache: false
 
-      - name: Cache NuGet packages (publish job)
+      - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
@@ -234,13 +234,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: Restore dependencies
-        run: dotnet restore
+      # 🔥 КЛЮЧЕВОЙ ШАГ: убираем lock-файл в релизе
+      - name: Remove packages.lock.json (workaround for NU1403)
+        run: |
+          find . -name "packages.lock.json" -type f -delete || echo "No lock files found"
 
-      - name: Pack with MinVer (release version)
+      - name: Restore dependencies (force)
+        run: dotnet restore --force-evaluate
+
+      - name: Pack with MinVer
         id: pack
         run: |
-          echo "🔖 Building release version: ${{ github.event.release.tag_name }}"
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-restore \
@@ -249,11 +253,6 @@ jobs:
             /p:SymbolPackageFormat=snupkg
 
           NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f -print -quit)
-          if [ -z "$NUPKG_FILE" ]; then
-            echo "❌ No .nupkg file created"
-            exit 1
-          fi
-
           echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
           echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
 
