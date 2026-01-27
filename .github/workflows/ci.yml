@@ -79,12 +79,14 @@ jobs:
         dotnet-version: ['10.0.102']
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download built artifacts
         uses: actions/download-artifact@v4
         with:
           name: built-artifacts
-          # Важно: артефакты загружаются в корень, но проект ожидает их в src/MoneyToWords/
-          path: src/MoneyToWords/
+          path: src/MoneyToWords/  # артефакты кладутся сюда
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -108,7 +110,6 @@ jobs:
             **/TestResults/*.trx
             !**/node_modules/**
           retention-days: 5
-
 
   # ===================================================================
   # 3. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
