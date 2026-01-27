@@ -120,6 +120,9 @@
     <!-- ================================================================= -->
     <!-- 10. ОТКЛЮЧЕНИЕ NU1403 ДЛЯ FSharp.Core (preview-SDK) -->
     <!-- ================================================================= -->
-    <PackageReference Update="FSharp.Core" NoWarn="NU1403" />
-
+    <ItemGroup>
+        <!-- Отключаем NU1403 для FSharp.Core — он встроен в SDK и может отличаться от nuget.org -->
+        <PackageReference Update="FSharp.Core" NoWarn="NU1403" />
+    </ItemGroup>
+    
 </Project>
