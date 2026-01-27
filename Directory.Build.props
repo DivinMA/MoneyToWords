@@ -25,7 +25,7 @@
     <!-- ================================================================= -->
     <PropertyGroup>
         <Authors>Divin MA</Authors>
-        <Company>DivinMA</Company>
+        <Company>Divin MA</Company>
         <Copyright>© 2026 Divin MA</Copyright>
         <Description>Converts monetary amount to words in Russian. DDD, functional, extensible, localization-ready.</Description>
         <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
