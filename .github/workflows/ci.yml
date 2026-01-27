@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main, master ] # 'feature/**' - добавлена ветка специально для проверки срабатывания CI/CD
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
   release:
@@ -28,13 +28,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET with caching
+      - name: Setup .NET (no built-in cache)
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-          cache: true
+          cache: false  # Управляем кэшем вручную
 
-      # =============== ДОБАВЛЕНА ДИАГНОСТИКА ===============
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # =============== ДИАГНОСТИКА (временно) ===============
       - name: "🧪 Diagnostics: FSharp.Core Source Check"
         run: |
           echo "🔍 === Диагностика: откуда берётся FSharp.Core? ==="
@@ -53,14 +61,13 @@ jobs:
           dotnet msbuild /pp:preprocessed.proj /nologo /verbosity:minimal
           grep -i "FSharp.Core" preprocessed.proj | head -15
 
-      - name: Restore dependencies (with logging)
+      - name: Restore dependencies
         run: |
-          echo "🔍 Current directory: $(pwd)"
           echo "📄 Found project files:"
           find . -name "*.fsproj" -type f -exec ls -la {} \;
           echo "🔒 Found packages.lock.json files:"
           find . -name "packages.lock.json" -type f -exec ls -la {} \;
-          echo "📦 Starting dotnet restore..."
+          echo "📦 Running dotnet restore --force-evaluate"
           dotnet restore --force-evaluate
 
       - name: Build project
@@ -93,10 +100,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        dotnet-version: ['10.0.102']
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -110,22 +113,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: '10.0.102'
+          cache: false
+
+      - name: Cache NuGet packages (test job)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Run tests
         run: |
-          # Явно создаём папку и указываем путь
           mkdir -p TestResults
           dotnet test src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-build \
             --verbosity normal \
             --logger "trx;LogFileName=$(pwd)/TestResults/results.trx"
-
-      - name: Find .trx files (debug)
-        run: |
-          echo "🔍 Searching for .trx files..."
-          find . -name "*.trx" -exec ls -la {} \;
 
       - name: Upload test results
         if: always()
@@ -144,10 +150,6 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        dotnet-version: ['10.0.102']
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -156,12 +158,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: built-artifacts
-          path: ./ # src/MoneyToWords/
+          path: ./
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: '10.0.102'
+          cache: false
+
+      - name: Cache NuGet packages (pack job)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Restore dependencies (for pack)
         run: |
@@ -191,6 +202,7 @@ jobs:
           path: ./artifacts/*.nupkg
           if-no-files-found: warn
 
+
   # ===================================================================
   # 4. ПУБЛИКАЦИЯ (Publish) — только при публикации релиза
   # ===================================================================
@@ -212,7 +224,15 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '10.0.102'
-          cache: true
+          cache: false
+
+      - name: Cache NuGet packages (publish job)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
         run: dotnet restore
