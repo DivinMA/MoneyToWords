@@ -1,12 +1,11 @@
 name: Release Drafter
 
 on:
-  pull_request:
-    types: [ opened, reopened, synchronize ]
-  pull_request_target:
-    types: [ closed ]
+  # Обновляем черновик при:
   push:
-    branches: [ main, master ]
+    branches: [ main, master ]          # мерж в main
+  pull_request:
+    types: [ opened, reopened, synchronize ]  # обновление PR
 
 permissions:
   contents: write
@@ -16,7 +15,7 @@ jobs:
   update_release_draft:
     runs-on: ubuntu-latest
     steps:
-      - name: Create Release Draft
+      - name: 📝 Update Release Draft
         uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
