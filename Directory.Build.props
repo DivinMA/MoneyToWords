@@ -41,13 +41,16 @@
         <DebugSymbols>true</DebugSymbols>
         <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <NoWarn>$(NoWarn);1591;1592;1594;1595;1573;NU1603;NU1403</NoWarn>
+        <NoWarn>$(NoWarn);1591;1592;1594;1595;1573;NU1603</NoWarn>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <RestoreLockedMode>Condition="'$(GITHUB_ACTIONS)' != 'true'">true</RestoreLockedMode>
         <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    </PropertyGroup>
+
+    <!-- Включаем RestoreLockedMode только вне CI -->
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
+        <RestoreLockedMode>true</RestoreLockedMode>
     </PropertyGroup>
 
     <!-- ================================================================= -->
