@@ -34,8 +34,17 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
           cache: true
 
-      - name: Restore dependencies (locked)
-        run: dotnet restore --locked-mode
+      #- name: Restore dependencies (locked)
+      #  run: dotnet restore --locked-mode
+      - name: Restore dependencies (with logging)
+        run: |
+          echo "🔍 Current directory: $(pwd)"
+          echo "📄 Found project files:"
+          find . -name "*.fsproj" -type f -exec ls -la {} \;
+          echo "🔒 Found packages.lock.json files:"
+          find . -name "packages.lock.json" -type f -exec ls -la {} \;
+          echo "📦 Starting dotnet restore..."
+          dotnet restore  # временно без --locked-mode
 
       - name: Build project
         run: |
