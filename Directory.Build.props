@@ -47,9 +47,13 @@
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
 
-    <!-- Включаем RestoreLockedMode только вне CI -->
-    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
+    <!-- Отключаем RestoreLockedMode в CI -->
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
         <RestoreLockedMode>false</RestoreLockedMode>
+    </PropertyGroup>
+
+    <!-- Всегда отключаем FallbackFolder -->
+    <PropertyGroup>
         <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
     </PropertyGroup>
 

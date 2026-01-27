@@ -61,6 +61,10 @@ jobs:
           dotnet msbuild /pp:preprocessed.proj /nologo /verbosity:minimal
           grep -i "FSharp.Core" preprocessed.proj | head -15
 
+      - name: Remove packages.lock.json in CI (preview SDK workaround)
+        run: |
+          find . -name "packages.lock.json" -type f -delete || echo "No lock files found"
+
       - name: Restore dependencies
         run: |
           echo "📄 Found project files:"
