@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'feature/**' ]
   pull_request:
     branches: [ main, master ]
   release:
@@ -32,7 +32,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-          cache: true
+          cache: false
 
       #- name: Restore dependencies (locked)
       #  run: dotnet restore --locked-mode
