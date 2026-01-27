@@ -1,0 +1,143 @@
+﻿<Project>
+    <!-- ================================================================= -->
+    <!-- CENTRALIZED BUILD CONFIGURATION -->
+    <!-- Directory.Build.props — применяется ко всем проектам -->
+    <!-- ================================================================= -->
+
+    <!-- Корень репозитория -->
+    <PropertyGroup>
+        <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
+        <RepoRoot Condition="!HasTrailingSlash('$(RepoRoot)')">$(RepoRoot)\</RepoRoot>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 1. ОСНОВНЫЕ НАСТРОЙКИ (общие для всех) -->
+    <!-- ================================================================= -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>10.0</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 2. МЕТАДАННЫЕ (общие, НО НЕ ПАКУЕМЫЕ) -->
+    <!-- ================================================================= -->
+    <PropertyGroup>
+        <Authors>Divin MA</Authors>
+        <Company>Divin MA</Company>
+        <Copyright>© 2026 Divin MA</Copyright>
+        <Description>Converts monetary amount to words in Russian. DDD, functional, extensible, localization-ready.</Description>
+        <RepositoryUrl>https://github.com/DivinMA/MoneyToWords</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 3. ОПЦИИ СБОРКИ -->
+    <!-- ================================================================= -->
+    <PropertyGroup>
+        <Optimize>true</Optimize>
+        <DebugType>portable</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+        <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591;1592;1594;1595;1573;NU1603</NoWarn>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    </PropertyGroup>
+
+    <!-- Включаем RestoreLockedMode только вне CI -->
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
+        <RestoreLockedMode>false</RestoreLockedMode>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 4. ПУТИ -->
+    <!-- ================================================================= -->
+    <PropertyGroup>
+        <BaseOutputPath>$(RepoRoot)bin\</BaseOutputPath>
+        <BaseIntermediateOutputPath>$(RepoRoot)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 5. ПАКЕТ — ТОЛЬКО ДЛЯ ОСНОВНОЙ БИБЛИОТЕКИ -->
+    <!-- ================================================================= -->
+    <PropertyGroup Condition="'$(MSBuildProjectName)' == 'MoneyToWords'">
+        <!-- Только если проект называется MoneyToWords (папка/имя) -->
+        <IsPackable>true</IsPackable>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <PackageId>MoneyToWordsFSharpLib</PackageId>
+        <Product>MoneyToWords</Product>
+        <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageTags>fsharp;money;spellout;ddd;localization;ru;currency;number-to-words</PackageTags>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedAllSources>true</EmbedAllSources>
+        <IncludeSymbols>false</IncludeSymbols>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 6. РЕСУРСЫ В ПАКЕТ — ТОЛЬКО ДЛЯ ОСНОВНОЙ БИБЛИОТЕКИ -->
+    <!-- ================================================================= -->
+    <ItemGroup Condition="'$(MSBuildProjectName)' == 'MoneyToWords'">
+        <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
+        <None Include="$(RepoRoot)CHANGELOG.md" Pack="true" PackagePath="\" />
+        <None Include="$(RepoRoot)LICENSE.txt" Pack="true" PackagePath="\" />
+        <None Include="$(RepoRoot)icon.png" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <!-- ================================================================= -->
+    <!-- 7. SOURCE LINK — ТОЛЬКО ДЛЯ ПАКУЕМЫХ ПРОЕКТОВ (или всегда, но можно ограничить) -->
+    <!-- ================================================================= -->
+    <ItemGroup Condition="'$(IsPackable)' == 'true'">
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
+    </ItemGroup>
+
+    <!-- ================================================================= -->
+    <!-- 8. MINVER — ТОЛЬКО ДЛЯ ПАКУЕМОГО ПРОЕКТА -->
+    <!-- ================================================================= -->
+    <ItemGroup Condition="'$(IsPackable)' == 'true'">
+        <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+        <MinVerTagPrefix>v</MinVerTagPrefix>
+        <MinVerDefaultPreReleaseIdentifiers>alpha</MinVerDefaultPreReleaseIdentifiers>
+        <MinVerMinimumMajorMinor>1.1</MinVerMinimumMajorMinor>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 9. ДИАГНОСТИКА -->
+    <!-- ================================================================= -->
+    <Target Name="LogPackagingInfo" BeforeTargets="Build;Pack" Condition="'$(IsPackable)' == 'true'">
+        <Message Text="📦 RepoRoot: $(RepoRoot)" Importance="high" />
+        <Message Text="📁 Output: $(BaseOutputPath)" Importance="high" />
+        <Message Text="🔖 Version: $(MinVerVersion)" Importance="high" />
+    </Target>
+
+    <!-- ================================================================= -->
+    <!-- 10. ОТКЛЮЧЕНИЕ NU1403 ДЛЯ FSharp.Core (preview-SDK) -->
+    <!-- ================================================================= -->
+    <ItemGroup>
+        <!-- Отключаем NU1403 для FSharp.Core — он встроен в SDK и может отличаться от nuget.org -->
+        <PackageReference Update="FSharp.Core" NoWarn="NU1403" />
+    </ItemGroup>
+
+    <!-- ================================================================= -->
+    <!-- 11. КОНФИГУРАЦИЯ ПО УМОЛЧАНИЮ -->
+    <!-- ================================================================= -->
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+        <Configuration>Release</Configuration>
+    </PropertyGroup>
+
+    <!-- Опционально: локально тоже Release по умолчанию -->
+    <PropertyGroup Condition="'$(Configuration)' == ''">
+        <Configuration>Release</Configuration>
+    </PropertyGroup>
+    
+</Project>

@@ -1,113 +1,273 @@
-# .github/workflows/ci.yml
 name: CI/CD
 
-# Запускать при:
 on:
-  # Push в основную ветку
   push:
-    branches:
-      - main
-      - master
-  # Pull Request
+    branches: [ main, master ]
   pull_request:
-    branches:
-      - main
-      - master
-  # При создании тега — например, v1.0.0
+    branches: [ main, master ]
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
-  # 1. Сборка и тесты
-  build-and-test:
+  # ===================================================================
+  # 1. СБОРКА (Build) — всегда
+  # ===================================================================
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
     strategy:
       matrix:
-        dotnet-version: ['10.0.x']
+        dotnet-version: ['10.0.102']
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup .NET ${{ matrix.dotnet-version }}
+      - name: Setup .NET (no built-in cache)
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
+          cache: false  # Управляем кэшем вручную
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # =============== ДИАГНОСТИКА (временно) ===============
+      - name: "🧪 Diagnostics: FSharp.Core Source Check"
+        run: |
+          echo "🔍 === Диагностика: откуда берётся FSharp.Core? ==="
+
+          echo "1. Версия .NET SDK:"
+          dotnet --version
+
+          echo "2. FSharp.Core в SDK:"
+          find /usr/share/dotnet -path "*/sdk/*/FSharp/FSharp.Core.dll" -exec ls -la {} \;
+
+          echo "3. В кэше NuGet:"
+          find ~/.nuget/packages -name "FSharp.Core" -type d || echo "Нет"
+
+          echo "4. MSBuild evaluation для проекта:"
+          cd src/MoneyToWords || cd ./src/MoneyToWords
+          dotnet msbuild /pp:preprocessed.proj /nologo /verbosity:minimal
+          grep -i "FSharp.Core" preprocessed.proj | head -15
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: |
+          echo "📄 Found project files:"
+          find . -name "*.fsproj" -type f -exec ls -la {} \;
+          echo "🔒 Found packages.lock.json files:"
+          find . -name "packages.lock.json" -type f -exec ls -la {} \;
+          echo "📦 Running dotnet restore --force-evaluate"
+          dotnet restore --force-evaluate
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+      - name: Build project
+        run: |
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-incremental \
+            --no-restore
 
-      - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
+      - name: Find built DLL (debug)
+        run: |
+          echo "🔍 Searching for MoneyToWords.dll..."
+          find . -name "MoneyToWords.dll" -exec ls -la {} \;
 
-  # 2. Сборка пакета (только для релизов)
-  pack:
-    if: github.event_name == 'release' && github.event.action == 'published'
+      - name: Upload Artifacts (for downstream jobs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-artifacts
+          path: |
+            bin/Release/
+            obj/*/Release/
+          retention-days: 5
+          if-no-files-found: error
+
+
+  # ===================================================================
+  # 2. ТЕСТИРОВАНИЕ (Test) — после успешной сборки
+  # ===================================================================
+  test:
+    needs: build
     runs-on: ubuntu-latest
-    needs: build-and-test
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-artifacts
+          path: src/MoneyToWords/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.102'
+          cache: false
 
-      - name: Restore
-        run: dotnet restore
+      - name: Cache NuGet packages (test job)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-      - name: Pack
+      - name: Run tests
         run: |
-          # 🔍 Отладка: покажем, какой тег пришёл
-          echo "🔍 Исходный tag: ${{ github.event.release.tag_name }}"
+          mkdir -p TestResults
+          dotnet test src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=$(pwd)/TestResults/results.trx"
 
-          version=${{ github.event.release.tag_name }}
-          version=${version#v}
-
-          echo "📦 Версия пакета: $version"
-
-          dotnet pack --configuration Release --no-restore \
-            --output ./artifacts \
-            /p:PackageVersion=$version \
-            /p:IncludeSymbols=true \
-            /p:SymbolPackageFormat=snupkg
-
-      - name: Upload NuGet package
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nuget-packages
-          path: ./artifacts/*.nupkg
-          if-no-files-found: error
+          name: test-results
+          path: TestResults/results.trx
+          retention-days: 5
 
-      - name: Upload Symbol package
-        uses: actions/upload-artifact@v4
-        with:
-          name: symbol-packages
-          path: ./artifacts/*.snupkg
-          if-no-files-found: warn
 
-  # 3. Создание GitHub Release
-  publish-nuget:
-    if: github.event_name == 'release' && github.event.action == 'published'
-    needs: pack
+  # ===================================================================
+  # 3. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
+  # ===================================================================
+  pack-validation:
+    if: github.event_name == 'pull_request'
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download Artifacts
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download built artifacts
         uses: actions/download-artifact@v4
         with:
-          name: nuget-packages
+          name: built-artifacts
+          path: ./
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.102'
+          cache: false
+
+      - name: Cache NuGet packages (pack job)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies (for pack)
+        run: |
+          echo "🔧 Restoring packages to generate project.assets.json"
+          dotnet restore src/MoneyToWords/MoneyToWords.fsproj --force-evaluate
+
+      - name: Pack for validation
+        run: |
+          echo "📦 Validating package structure"
+          dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            /p:IncludeSymbols=true \
+            /p:SymbolPackageFormat=snupkg \
+            /p:ContinuousIntegrationBuild=true \
+            /p:NoWarn=NU5128
+
+      - name: List created packages
+        run: |
+          ls -la ./artifacts/
+
+      - name: Upload NuPkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-package
+          path: ./artifacts/*.nupkg
+          if-no-files-found: warn
+
+
+  # ===================================================================
+  # 4. ПУБЛИКАЦИЯ (Publish) — только при публикации релиза
+  # ===================================================================
+  publish:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.102'
+          cache: false
+
+      - name: Cache NuGet packages (publish job)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Pack with MinVer (release version)
+        id: pack
+        run: |
+          echo "🔖 Building release version: ${{ github.event.release.tag_name }}"
+          dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-restore \
+            --output ./artifacts \
+            /p:IncludeSymbols=true \
+            /p:SymbolPackageFormat=snupkg
+
+          NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f -print -quit)
+          if [ -z "$NUPKG_FILE" ]; then
+            echo "❌ No .nupkg file created"
+            exit 1
+          fi
+
+          echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
+          echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
 
       - name: Publish to NuGet.org
         run: |
-          for pkg in *.nupkg; do
-            dotnet nuget push "$pkg" \
-              --source https://api.nuget.org/v3/index.json \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
-              --skip-duplicate
-          done
+          dotnet nuget push "${{ steps.pack.outputs.PACKAGED_FILE }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --skip-duplicate
+
+      - name: Attach package to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pack.outputs.PACKAGED_FILE }}
+          name: ${{ github.event.release.name }}
+          body: ${{ github.event.release.body }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -5,7 +5,7 @@ open Xunit
 open MoneyToWords.Domain
 open MoneyToWords.Presentation
 
-module EdgeCasesTests =
+module MoneyToWordsTests =
 
     /// Вспомогательная функция: безопасное создание Money и сравнение результата
     let expectWords rubles kopecks expected =

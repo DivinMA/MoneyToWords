@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <!-- Основное -->
-        <TargetFramework>net10.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <GenerateProgramFile>false</GenerateProgramFile>
@@ -13,28 +12,28 @@
 
     <ItemGroup>
         <!-- Тестовые модули -->
-        <Compile Include="Tests\MoneyValidationTests.fs" />
-        <Compile Include="Tests\RubleSpellingTests.fs" />
-        <Compile Include="Tests\KopeckSpellingTests.fs" />
-        <Compile Include="Tests\DeclensionTests.fs" />
-        <Compile Include="Tests\RussianRulesTests.fs" />
-        <Compile Include="Tests\LargeNumbersTests.fs" />
-        <Compile Include="Tests\EdgeCasesTests.fs" />
-        <Compile Include="Tests\PropertyTests.fs" />
+        <Compile Include="Domain\MoneyErrorTests.fs" />
+        <Compile Include="Domain\MoneyValidationTests.fs" />
+        <Compile Include="Application\DeclensionTests.fs" />
+        <Compile Include="Infrastructure\RussianRulesTests.fs" />
+        <Compile Include="Integration\MoneyToWordsTests.fs" />
+        <Compile Include="Integration\LargeNumbersTests.fs" />
+        <Compile Include="Properties\PropertyTests.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <!-- Зависимости -->
         <PackageReference Include="FsCheck" Version="3.3.2" />
         <PackageReference Include="FsCheck.Xunit" Version="3.3.2" />
+        <PackageReference Include="FsUnit.xUnit" Version="7.1.1" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
         <PackageReference Include="Unquote" Version="7.0.1" />
-        <PackageReference Include="xunit" Version="2.9.3" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="coverlet.collector" Version="6.0.4" />
+        <PackageReference Include="xunit.v3" Version="3.2.2" />
     </ItemGroup>
 
     <ItemGroup>
