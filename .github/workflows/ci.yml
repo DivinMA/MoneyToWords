@@ -62,7 +62,26 @@ jobs:
             src/MoneyToWords/obj/Release/
           retention-days: 5
           if-no-files-found: error
+      - name: Build project
+        run: |
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-restore
 
+      - name: Find built DLL
+        run: |
+          echo "🔍 Searching for MoneyToWords.dll..."
+          find . -name "MoneyToWords.dll" -exec ls -la {} \;
+
+      - name: Upload Artifacts (for downstream jobs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-artifacts
+          path: |
+            bin/Release/
+            obj/*/Release/
+          retention-days: 5
+          if-no-files-found: error
 
   # ===================================================================
   # 2. ТЕСТИРОВАНИЕ (Test) — после успешной сборки
