@@ -14,7 +14,7 @@
     <!-- 1. ОСНОВНЫЕ НАСТРОЙКИ (общие для всех) -->
     <!-- ================================================================= -->
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net8.0;net9.0;net10.0</TargetFramework>
         <LangVersion>10.0</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
