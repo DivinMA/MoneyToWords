@@ -63,6 +63,11 @@ jobs:
             --configuration Release \
             --no-incremental \
             --no-restore
+      
+      - name: Check output structure
+        run: |
+          echo "🔍 Output files:"
+          find bin -type f -name "*.dll" | sort
 
       - name: Find built DLL (debug)
         run: |
