@@ -122,11 +122,14 @@ jobs:
           ls -la src/MoneyToWords/MoneyToWords.fsproj
           echo "🧪 Running tests..."
           mkdir -p TestResults
-          dotnet test src/MoneyToWords/MoneyToWords.fsproj \
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
             --configuration Release \
             --no-build \
             --verbosity normal \
             --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx"
+          echo "📄 Contents of TestResults after test:"
+          find TestResults -type f -exec ls -la {} \; || echo "No files found"
+          
           echo "📄 Test results generated:"
           ls -la TestResults/
           
