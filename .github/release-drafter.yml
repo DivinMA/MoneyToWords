@@ -3,36 +3,20 @@ tag-template: 'v$RESOLVED_VERSION'
 
 categories:
   - title: '🚀 Features'
-    labels:
-      - 'feature'
-      - 'enhancement'
+    labels: [feature, enhancement]
   - title: '🐛 Bug Fixes'
-    labels:
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
+    labels: [fix, bug]
   - title: '🧹 Refactoring'
-    labels:
-      - 'refactor'
+    labels: [refactor]
   - title: '📚 Documentation'
-    labels:
-      - 'docs'
+    labels: [docs]
   - title: '⚙️ Maintenance'
-    labels:
-      - 'chore'
-      - 'ci'
-      - 'dependencies'
+    labels: [chore, ci, dependencies]
 
 version-resolver:
-  major:
-    labels:
-      - 'major'
-  minor:
-    labels:
-      - 'minor'
-  patch:
-    labels:
-      - 'patch'
+  major: { labels: [major] }
+  minor: { labels: [minor] }
+  patch: { labels: [patch] }
   default: patch
 
 change-template: '- $TITLE (#$NUMBER)'
@@ -42,13 +26,10 @@ template: |
   $CHANGES
 
   ---
-
   ## How to Install
-
   ```bash
   dotnet add package MoneyToWordsFSharpLib --version $RESOLVED_VERSION
   ```
-  ---
 
-  ## Changelog
+  Changelog
   Full changelog: Compare $PREVIOUS_TAG...$TAG

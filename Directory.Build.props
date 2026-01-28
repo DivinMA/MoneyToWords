@@ -7,11 +7,20 @@
     <!-- Корень репозитория -->
     <PropertyGroup>
         <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
-        <RepoRoot Condition="!HasTrailingSlash('$(RepoRoot)')">$(RepoRoot)\</RepoRoot>
+        <RepoRoot Condition="!$([System.String]::EndsWith($(RepoRoot), '\'))">$(RepoRoot)\</RepoRoot>
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 1. ОСНОВНЫЕ НАСТРОЙКИ (общие для всех) -->
+    <!-- 1. КОНФИГУРАЦИЯ ПО УМОЛЧАНИЮ (должна быть ВСЕГДА первой!) -->
+    <!-- ================================================================= -->
+    <PropertyGroup>
+        <!-- Гарантируем, что Configuration установлен ДО использования в путях -->
+        <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+        <Configuration Condition="'$(GITHUB_ACTIONS)' == 'true'">Release</Configuration>
+    </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 2. ОСНОВНЫЕ НАСТРОЙКИ (общие для всех) -->
     <!-- ================================================================= -->
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -21,7 +30,7 @@
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 2. МЕТАДАННЫЕ (общие, НО НЕ ПАКУЕМЫЕ) -->
+    <!-- 3. МЕТАДАННЫЕ (общие, НО НЕ ПАКУЕМЫЕ) -->
     <!-- ================================================================= -->
     <PropertyGroup>
         <Authors>Divin MA</Authors>
@@ -33,7 +42,7 @@
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 3. ОПЦИИ СБОРКИ -->
+    <!-- 4. ОПЦИИ СБОРКИ -->
     <!-- ================================================================= -->
     <PropertyGroup>
         <Optimize>true</Optimize>
@@ -58,18 +67,17 @@
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 4. ПУТИ -->
+    <!-- 5. ПУТИ -->
     <!-- ================================================================= -->
     <PropertyGroup>
-        <BaseOutputPath>$(RepoRoot)bin\</BaseOutputPath>
-        <BaseIntermediateOutputPath>$(RepoRoot)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+        <BaseOutputPath>$(RepoRoot)bin\$(Configuration)\</BaseOutputPath>
+        <BaseIntermediateOutputPath>$(RepoRoot)obj\$(MSBuildProjectName)_$(TargetFramework)\</BaseIntermediateOutputPath>
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 5. ПАКЕТ — ТОЛЬКО ДЛЯ ОСНОВНОЙ БИБЛИОТЕКИ -->
+    <!-- 6. ПАКЕТ — ТОЛЬКО ДЛЯ ОСНОВНОЙ БИБЛИОТЕКИ -->
     <!-- ================================================================= -->
     <PropertyGroup Condition="'$(MSBuildProjectName)' == 'MoneyToWords'">
-        <!-- Только если проект называется MoneyToWords (папка/имя) -->
         <IsPackable>true</IsPackable>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <PackageId>MoneyToWordsFSharpLib</PackageId>
@@ -86,7 +94,7 @@
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 6. РЕСУРСЫ В ПАКЕТ — ТОЛЬКО ДЛЯ ОСНОВНОЙ БИБЛИОТЕКИ -->
+    <!-- 7. РЕСУРСЫ В ПАКЕТ — ТОЛЬКО ДЛЯ ОСНОВНОЙ БИБЛИОТЕКИ -->
     <!-- ================================================================= -->
     <ItemGroup Condition="'$(MSBuildProjectName)' == 'MoneyToWords'">
         <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
@@ -96,16 +104,16 @@
     </ItemGroup>
 
     <!-- ================================================================= -->
-    <!-- 7. SOURCE LINK — ТОЛЬКО ДЛЯ ПАКУЕМЫХ ПРОЕКТОВ (или всегда, но можно ограничить) -->
+    <!-- 8. SOURCE LINK — ТОЛЬКО ДЛЯ ПАКУЕМЫХ ПРОЕКТОВ -->
     <!-- ================================================================= -->
     <ItemGroup Condition="'$(IsPackable)' == 'true'">
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
     </ItemGroup>
 
     <!-- ================================================================= -->
-    <!-- 8. MINVER — ТОЛЬКО ДЛЯ ПАКУЕМОГО ПРОЕКТА -->
+    <!-- 9. MINVER — ТОЛЬКО ДЛЯ ПАКУЕМОГО ПРОЕКТА В RELEASE -->
     <!-- ================================================================= -->
-    <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <ItemGroup Condition="'$(IsPackable)' == 'true' AND '$(Configuration)' == 'Release'">
         <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
     </ItemGroup>
 
@@ -116,7 +124,7 @@
     </PropertyGroup>
 
     <!-- ================================================================= -->
-    <!-- 9. ДИАГНОСТИКА -->
+    <!-- 10. ДИАГНОСТИКА -->
     <!-- ================================================================= -->
     <Target Name="LogPackagingInfo" BeforeTargets="Build;Pack" Condition="'$(IsPackable)' == 'true'">
         <Message Text="📦 RepoRoot: $(RepoRoot)" Importance="high" />
@@ -125,23 +133,17 @@
     </Target>
 
     <!-- ================================================================= -->
-    <!-- 10. ОТКЛЮЧЕНИЕ NU1403 ДЛЯ FSharp.Core (preview-SDK) -->
+    <!-- 11. ОТКЛЮЧЕНИЕ NU1403 ДЛЯ FSharp.Core -->
     <!-- ================================================================= -->
     <ItemGroup>
-        <!-- Отключаем NU1403 для FSharp.Core — он встроен в SDK и может отличаться от nuget.org -->
         <PackageReference Update="FSharp.Core" NoWarn="NU1403" />
     </ItemGroup>
 
     <!-- ================================================================= -->
-    <!-- 11. КОНФИГУРАЦИЯ ПО УМОЛЧАНИЮ -->
+    <!-- 12. CI METADATA (GitHub Actions) -->
     <!-- ================================================================= -->
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
-        <Configuration>Release</Configuration>
+        <RepositoryBranch>$([System.Environment]::GetEnvironmentVariable("GITHUB_REF_NAME"))</RepositoryBranch>
+        <RepositoryCommit>$([System.Environment]::GetEnvironmentVariable("GITHUB_SHA"))</RepositoryCommit>
     </PropertyGroup>
-
-    <!-- Опционально: локально тоже Release по умолчанию -->
-    <PropertyGroup Condition="'$(Configuration)' == ''">
-        <Configuration>Release</Configuration>
-    </PropertyGroup>
-    
 </Project>

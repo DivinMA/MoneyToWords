@@ -1,11 +1,10 @@
 name: Release Drafter
 
 on:
-  # Обновляем черновик при:
   push:
-    branches: [ main, master ]          # мерж в main
+    branches: [ main, master ]
   pull_request:
-    types: [ opened, reopened, synchronize ]  # обновление PR
+    types: [ opened, reopened, synchronize ]
 
 permissions:
   contents: write
@@ -17,7 +16,5 @@ jobs:
     steps:
       - name: 📝 Update Release Draft
         uses: release-drafter/release-drafter@v6
-        with:
-          config-name: release-drafter.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
