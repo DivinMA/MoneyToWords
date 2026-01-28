@@ -52,7 +52,7 @@
         <NoWarn>$(NoWarn);1591;1592;1594;1595;1573;NU1603</NoWarn>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
-        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
     </PropertyGroup>
 
     <!-- Отключаем RestoreLockedMode в CI -->
