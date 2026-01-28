@@ -125,6 +125,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+
+      - name: Build test project (required for testing)
+        run: |
+          dotnet build tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
+            --configuration Release \
+            --no-restore
+
+
       - name: Run tests
         run: |
           echo "🔍 Current directory: $(pwd)"
