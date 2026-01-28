@@ -72,7 +72,12 @@ jobs:
       - name: Find built DLL (debug)
         run: |
           echo "🔍 Searching for MoneyToWords.dll..."
-          find . -name "MoneyToWords.dll" -exec ls -la {} \;
+          find . -name "MoneyToWords.dll" -exec ls -la {} \
+
+      - name: Check output after build
+        run: |
+          echo "🔍 Output files:"
+          find bin -type f -name "*.dll" | sort
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v6
