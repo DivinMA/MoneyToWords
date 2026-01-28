@@ -133,14 +133,19 @@ jobs:
         run: |
           echo "🧪 Running tests..."
           mkdir -p TestResults
+
           dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
             --configuration Release \
             --no-build \
             --verbosity normal \
-            --logger "trx;LogFileName=TestResults/results.trx"
+            --logger "trx"
 
-          echo "📄 Test results generated:"
-          find TestResults -type f -exec ls -la {} \;
+          echo "📄 All .trx files in the workspace:"
+          find . -type f -name "*.trx" -exec ls -la {} \;
+
+          echo "📄 Contents of TestResults:"
+          ls -la TestResults/ || echo "No such directory"
+
 
       - name: Upload test results
         if: always()
