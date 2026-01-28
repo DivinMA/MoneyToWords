@@ -3,20 +3,29 @@ tag-template: 'v$RESOLVED_VERSION'
 
 categories:
   - title: '🚀 Features'
-    labels: [feature, enhancement]
+    labels: [feature, enhancement, feat, 'type:feature']
   - title: '🐛 Bug Fixes'
-    labels: [fix, bug]
+    labels: [fix, bug, 'type:fix']
+  - title: '🔧 Improvements'
+    labels: [improvement, optimize]
   - title: '🧹 Refactoring'
-    labels: [refactor]
+    labels: [refactor, 'code-quality']
   - title: '📚 Documentation'
-    labels: [docs]
+    labels: [docs, documentation]
   - title: '⚙️ Maintenance'
-    labels: [chore, ci, dependencies]
+    labels: [chore, ci, dependencies, 'dependency-update']
+  - title: '💥 Breaking Changes'
+    labels: [breaking, major, 'backwards-incompatible']
+
+exclude-labels:
+  - ignore-for-release
+  - skip-changelog
+  - draft
 
 version-resolver:
-  major: { labels: [major] }
-  minor: { labels: [minor] }
-  patch: { labels: [patch] }
+  major: { labels: [major, breaking, 'backwards-incompatible'] }
+  minor: { labels: [feature, enhancement, feat] }
+  patch: { labels: [fix, bug, docs, chore, ci] }
   default: patch
 
 change-template: '- $TITLE (#$NUMBER)'
@@ -32,4 +41,4 @@ template: |
   ```
 
   Changelog
-  Full changelog: Compare $PREVIOUS_TAG...$TAG
+  Full changelog: [Compare $PREVIOUS_TAG...$NEXT_TAG](https://github.com/DivinMA/MoneyToWords/compare/$PREVIOUS_TAG...$NEXT_TAG)
