@@ -10,7 +10,7 @@ on:
 
 jobs:
   # ===================================================================
-  # 1. СБОРКА (Build) — всегда
+  # 1. СБОРКА (Build) — только основная библиотека
   # ===================================================================
   build:
     runs-on: ubuntu-latest
@@ -22,7 +22,6 @@ jobs:
       matrix:
         dotnet-version: ['10.0.x']
 
-    # ✅ ВАЖНО: передаём dotnet-version в другие job'ы
     outputs:
       dotnet-version: ${{ matrix.dotnet-version }}
 
@@ -57,29 +56,19 @@ jobs:
           echo "📦 Running dotnet restore --force-evaluate"
           dotnet restore --force-evaluate
 
-      - name: Build project
+      - name: Build library
         run: |
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-incremental \
             --no-restore
-      
-      - name: Check output structure
+
+      - name: Check output
         run: |
           echo "🔍 Output files:"
           find bin -type f -name "*.dll" | sort
 
-      - name: Find built DLL (debug)
-        run: |
-          echo "🔍 Searching for MoneyToWords.dll..."
-          find . -name "MoneyToWords.dll" -exec ls -la {} \;
-
-      - name: Check output after build
-        run: |
-          echo "🔍 Output files:"
-          find bin -type f -name "*.dll" | sort
-
-      - name: Upload Artifacts
+      - name: Upload Artifacts (for downstream jobs)
         uses: actions/upload-artifact@v6
         with:
           name: built-artifacts-${{ matrix.dotnet-version }}
@@ -91,13 +80,12 @@ jobs:
 
 
   # ===================================================================
-  # 2. ТЕСТИРОВАНИЕ (Test) — после успешной сборки
+  # 2. ТЕСТИРОВАНИЕ (Test) — восстанавливаем и собираем тесты
   # ===================================================================
   test:
     needs: build
     runs-on: ubuntu-latest
 
-    # ✅ Передаём dotnet-version дальше, если pack-validation зависит от test
     outputs:
       dotnet-version: ${{ needs.build.outputs.dotnet-version }}
 
@@ -105,11 +93,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Download built artifacts
+      - name: Download built artifacts (library)
         uses: actions/download-artifact@v4
         with:
           name: built-artifacts-${{ needs.build.outputs.dotnet-version }}
-          path: src/MoneyToWords/
+          path: .
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -125,32 +113,34 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-
-      - name: Build test project (required for testing)
+      - name: Remove packages.lock.json (workaround for preview SDK)
         run: |
+          find . -name "packages.lock.json" -type f -delete || true
+
+      - name: Restore test project
+        run: |
+          echo "🔧 Restoring test project..."
+          dotnet restore tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --force-evaluate
+
+      - name: Build test project
+        run: |
+          echo "🔨 Building test project..."
           dotnet build tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
             --configuration Release \
             --no-restore
 
-
       - name: Run tests
         run: |
-          echo "🔍 Current directory: $(pwd)"
-          echo "📄 Project file:"
-          ls -la src/MoneyToWords/MoneyToWords.fsproj
           echo "🧪 Running tests..."
           mkdir -p TestResults
           dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
             --configuration Release \
             --no-build \
             --verbosity normal \
-            --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx"
-          echo "📄 Contents of TestResults after test:"
-          find TestResults -type f -exec ls -la {} \; || echo "No files found"
-          
+            --logger "trx;LogFileName=TestResults/results.trx"
+
           echo "📄 Test results generated:"
-          ls -la TestResults/
-          
+          find TestResults -type f -exec ls -la {} \;
 
       - name: Upload test results
         if: always()
@@ -176,9 +166,8 @@ jobs:
       - name: Download built artifacts
         uses: actions/download-artifact@v4
         with:
-          # ✅ Теперь работает: test передаёт dotnet-version
           name: built-artifacts-${{ needs.test.outputs.dotnet-version }}
-          path: ./
+          path: .
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -258,7 +247,7 @@ jobs:
         run: |
           find . -name "packages.lock.json" -type f -delete || true
 
-      - name: Restore dependencies (force)
+      - name: Restore dependencies
         run: dotnet restore --force-evaluate
 
       - name: Pack with MinVer
