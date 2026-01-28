@@ -10,9 +10,9 @@ on:
 
 jobs:
   # ===================================================================
-  # 1. СБОРКА И ТЕСТИРОВАНИЕ НА НЕСКОЛЬКИХ ВЕРСИЯХ .NET
+  # 1. СБОРКА НА НЕСКОЛЬКИХ ВЕРСИЯХ .NET
   # ===================================================================
-  build_and_test:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,23 +53,75 @@ jobs:
             ${{ runner.os }}-nuget-${{ matrix.dotnet-version }}-
             ${{ runner.os }}-nuget-
 
-      # Удаляем lock-файл ТОЛЬКО в preview-версиях
-      - name: Remove packages.lock.json (preview workaround)
+      # Удаляем lock-файл только в preview
+      - name: Remove packages.lock.json (preview)
         if: matrix.is-preview == true
         run: |
           find . -name "packages.lock.json" -type f -delete || echo "No lock files found"
 
       - name: Restore dependencies
-        run: |
-          echo "📦 Running dotnet restore --force-evaluate"
-          dotnet restore --force-evaluate
+        run: dotnet restore --force-evaluate
 
       - name: Build project
         run: |
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-incremental \
-            --no-restore
+            --no-restore \
+            --framework:${{ matrix.target-framework }}
+
+      - name: Upload Artifacts (per SDK version)
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-artifacts-${{ matrix.dotnet-version }}
+          path: |
+            bin/Release/${{ matrix.target-framework }}/
+            obj/*/Release/${{ matrix.target-framework }}/
+          retention-days: 5
+          if-no-files-found: error
+
+
+  # ===================================================================
+  # 2. ТЕСТИРОВАНИЕ НА ВСЕХ ВЕРСИЯХ
+  # ===================================================================
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.417', '9.0.309', '10.0.102']
+        include:
+          - dotnet-version: '8.0.417'
+            target-framework: 'net8.0'
+          - dotnet-version: '9.0.309'
+            target-framework: 'net9.0'
+          - dotnet-version: '10.0.102'
+            target-framework: 'net10.0'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-artifacts-${{ matrix.dotnet-version }}
+          path: .
+
+      - name: Setup .NET ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+          cache: false
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ matrix.dotnet-version }}-${{ hashFiles('**/*.fsproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-${{ matrix.dotnet-version }}-
+            ${{ runner.os }}-nuget-
 
       - name: Run tests
         run: |
@@ -77,6 +129,7 @@ jobs:
           dotnet test src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-build \
+            --framework:${{ matrix.target-framework }} \
             --verbosity normal \
             --logger "trx;LogFileName=$(pwd)/TestResults/results.${{ matrix.dotnet-version }}.trx"
 
@@ -90,19 +143,25 @@ jobs:
 
 
   # ===================================================================
-  # 2. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
+  # 3. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
   # ===================================================================
   pack-validation:
     if: github.event_name == 'pull_request'
-    needs: build_and_test
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dotnet-version: ['10.0.102']  # Только одна версия для паковки
+        dotnet-version: ['10.0.102']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-artifacts-${{ matrix.dotnet-version }}
+          path: .
 
       - name: Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
@@ -149,13 +208,13 @@ jobs:
 
 
   # ===================================================================
-  # 3. ПУБЛИКАЦИЯ (Publish) — только при релизе, ОДИН раз
+  # 4. ПУБЛИКАЦИЯ (Publish) — только при релизе
   # ===================================================================
   publish:
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: build_and_test
+    needs: test
     runs-on: ubuntu-latest
-    # Без matrix — только один запуск
+    # Без matrix — один запуск
 
     steps:
       - name: Checkout repository
@@ -163,7 +222,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET (latest for publishing)
+      - name: Setup .NET (for publishing)
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '10.0.102'
