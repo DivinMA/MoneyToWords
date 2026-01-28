@@ -1,16 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="Program.fs" />
-  </ItemGroup>
+    <Target Name="LogFallbackFolder" BeforeTargets="Restore">
+        <Message Text="📁 DisableImplicitNuGetFallbackFolder = $(DisableImplicitNuGetFallbackFolder)" Importance="high" />
+    </Target>
 
-  <ItemGroup>
-      <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
+    </ItemGroup>
 
 </Project>
