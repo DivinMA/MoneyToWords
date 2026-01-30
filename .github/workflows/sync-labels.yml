@@ -1,0 +1,36 @@
+name: Sync Labels
+
+on:
+  push:
+    paths:
+      - '.github/config/labels.json'
+  workflow_dispatch:  # Можно запустить вручную
+
+permissions:
+  contents: write  # Для создания/удаления лейблов
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run label sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run labels:sync

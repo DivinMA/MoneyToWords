@@ -20,7 +20,7 @@ jobs:
       pull-requests: read
 
     steps:
-      - name: Checkout code (required for gh CLI)
+      - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Setup GitHub CLI
@@ -28,18 +28,92 @@ jobs:
         with:
           gh-version: latest
 
-      - name: Validate version label
+      - name: Validate required labels
         run: |
-          echo "🔍 Проверка: указан ли patch/minor/major?"
-          labels=$(gh pr view ${{ github.event.number }} --json labels --jq '.labels[].name')
-          if echo "$labels" | grep -E "(patch|minor|major)" > /dev/null; then
-            echo "✅ Есть один из: patch, minor, major"
-          else
-            echo "❌ Ошибка: не указан ни один из: patch, minor, major"
+          echo "🔍 Получаем лейблы PR #${{ github.event.number }}"
+          labels_json=$(gh pr view ${{ github.event.number }} --json labels --jq '.labels[].name')
+          mapfile -t labels <<< "$labels_json"
+
+          if [ ${#labels[@]} -eq 0 ]; then
+            echo "❌ PR без лейблов"
+            echo "💡 Добавьте хотя бы один: type:*, patch/minor/major"
+            exit 1
+          fi
+
+          echo "🏷️  Найдено лейблов: ${#labels[@]}"
+          for label in "${labels[@]}"; do
+            echo "   - $label"
+          done
+
+          # ===================================================================
+          # Группа 1: Версионирование (обязательно один)
+          # ===================================================================
+          version_labels=()
+          for label in "${labels[@]}"; do
+            case "$label" in
+              "patch"|"minor"|"major")
+                version_labels+=("$label")
+                ;;
+            esac
+          done
+
+          if [ ${#version_labels[@]} -eq 0 ]; then
+            echo "❌ Не указан ни один из: patch, minor, major"
             echo "📚 Подробнее: https://github.com/DivinMA/MoneyToWords/blob/main/.github/CONTRIBUTING.md#%EF%B8%8F-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D0%B0-%D0%BB%D0%B5%D0%B9%D0%B1%D0%BB%D0%BE%D0%B2"
             echo "💡 Подсказка: добавьте один из лейблов в PR"
             exit 1
+          elif [ ${#version_labels[@]} -gt 1 ]; then
+            echo "❌ Указано несколько версионных лейблов: ${version_labels[*]}"
+            echo "💡 Должен быть ТОЛЬКО ОДИН: patch, minor или major"
+            exit 1
+          else
+            echo "✅ Версионный лейбл: ${version_labels[0]}"
           fi
+
+          # ===================================================================
+          # Группа 2: Тип (обязательно один)
+          # ===================================================================
+          type_labels=()
+          for label in "${labels[@]}"; do
+            if [[ "$label" =~ ^type: ]]; then
+              type_labels+=("$label")
+            fi
+          done
+
+          if [ ${#type_labels[@]} -eq 0 ]; then
+            echo "❌ Не указан тип изменений"
+            echo "💡 Добавьте один из: type:bug, type:feature, type:question, type:discussion"
+            echo "📚 Подробнее: https://github.com/DivinMA/MoneyToWords/blob/main/.github/CONTRIBUTING.md#type---тип-изменений"
+            exit 1
+          elif [ ${#type_labels[@]} -gt 1 ]; then
+            echo "❌ Указано несколько типов: ${type_labels[*]}"
+            echo "💡 Должен быть ТОЛЬКО ОДИН тип"
+            exit 1
+          else
+            echo "✅ Тип: ${type_labels[0]}"
+          fi
+
+          # ===================================================================
+          # Группы: area, priority, effort — максимум по одному
+          # ===================================================================
+          for group in "area" "priority" "effort"; do
+            matched=()
+            for label in "${labels[@]}"; do
+              if [[ "$label" =~ ^$group: ]]; then
+                matched+=("$label")
+              fi
+            done
+
+            if [ ${#matched[@]} -gt 1 ]; then
+              echo "❌ Несколько лейблов в группе '$group': ${matched[*]}"
+              echo "💡 Должен быть ТОЛЬКО ОДИН в группе $group"
+              exit 1
+            elif [ ${#matched[@]} -eq 1 ]; then
+              echo "✅ $group: ${matched[0]}"
+            fi
+          done
+
+          echo "🎉 Все проверки пройдены: лейблы корректны"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
