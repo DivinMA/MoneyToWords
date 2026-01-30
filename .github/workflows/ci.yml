@@ -23,11 +23,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup GitHub CLI
-        uses: cli/cli@v2.331.0
-        with:
-          gh-version: latest
-
       - name: Validate required labels
         run: |
           echo "🔍 Получаем лейблы PR #${{ github.event.number }}"
