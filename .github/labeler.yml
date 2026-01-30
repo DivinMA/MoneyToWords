@@ -1,0 +1,112 @@
+# 🔹 Поведенческие
+
+"feature":
+  - head-branch: ["^feat/", "^feature/"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*"
+
+"fix":
+  - head-branch: ["^fix/", "bugfix", "^hotfix/"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*.fs"
+      - any-glob-to-any-file: "tests/**/*"
+
+"docs":
+  - changed-files:
+      - any-glob-to-any-file: "docs/**/*"
+      - any-glob-to-any-file: "**/*.md"
+  - head-branch: ["^docs/", "readme"]
+
+"refactor":
+  - head-branch: ["^refactor/", "cleanup"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*"
+
+"chore":
+  - head-branch: ["^chore/", "maintenance"]
+  - changed-files:
+      - any-glob-to-any-file: "build.fsx"
+      - any-glob-to-any-file: "Directory.Build.props"
+
+"test":
+  - changed-files:
+      - any-glob-to-any-file: "tests/**/*"
+      - any-glob-to-any-file: "**/*Tests*.fs"
+
+"ci":
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**/*"
+  - head-branch: ["^ci/", "pipeline"]
+
+"security":
+  - head-branch: ["^security/", "vuln"]
+  - changed-files:
+      - any-glob-to-any-file: "**/security.*"
+
+# 🔹 Версионирование
+
+"patch":
+  - head-branch: ["^hotfix/", "patch", "^fix/"]
+  - changed-files:
+      - any-glob-to-any-file: "docs/**/*"
+      - any-glob-to-any-file: "**/*.md"
+
+"minor":
+  - head-branch: ["^feat/", "^feature/", "^enhancement/"]
+
+"major":
+  - head-branch: ["^breaking/", "major", "v2", "^remove/"]
+  - changed-files:
+      - any-glob-to-any-file: "public-api.txt"
+
+# 🔹 Области кода
+
+"area:core":
+  - changed-files:
+      - any-glob-to-any-file: "src/MoneyToWords/**/*"
+
+"area:tests":
+  - changed-files:
+      - any-glob-to-any-file: "tests/**/*"
+
+"area:examples":
+  - changed-files:
+      - any-glob-to-any-file: "examples/**/*"
+
+"area:ci":
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**/*"
+
+"area:docs":
+  - changed-files:
+      - any-glob-to-any-file: "docs/**/*"
+
+# 🔹 Типы задач
+
+"type:feature":
+  - head-branch: ["^feat/", "^feature/"]
+
+"type:bug":
+  - head-branch: ["^fix/", "bugfix"]
+
+"type:question":
+  - head-branch: ["^question/", "ask"]
+
+"type:discussion":
+  - head-branch: ["^discuss/", "arch"]
+
+# 🔹 Приоритеты
+
+"priority:critical":
+  - head-branch: ["^urgent/", "critical", "P0"]
+
+"priority:high":
+  - head-branch: ["^important/", "high", "P1"]
+
+# 🔹 Статус PR
+
+"draft":
+  - head-branch: ["^wip/", "^draft/", "in-progress"]
+
+"ready-for-review":
+  - head-branch: ["^pr/", "^review/", "rfc"]
