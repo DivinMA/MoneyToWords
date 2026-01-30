@@ -118,7 +118,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
   # ===================================================================
-  # 1. СБОРКА (Build) — только основная библиотека
+  # 1. СБОРКА (Build) — только основная библиотека + проверка скриптов
   # ===================================================================
   build:
     runs-on: ubuntu-latest
@@ -139,6 +139,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 🔹 Добавлено: Setup Node.js для npm
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
       - name: Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v5
         with:
@@ -152,6 +158,19 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
+
+      # 🔹 Добавлено: установка npm-зависимостей
+      - name: Install dependencies
+        run: npm ci
+        # Если нет package-lock.json, используй: npm install
+
+      # 🔹 Добавлено: проверка всех .fsx скриптов
+      - name: Verify automation scripts
+        run: |
+          echo "🔍 Проверка формата и синтаксиса F# скриптов..."
+          npm run verify
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove packages.lock.json (preview workaround)
         run: |
@@ -185,7 +204,6 @@ jobs:
             obj/*/Release/
           retention-days: 5
           if-no-files-found: error
-
 
   # ===================================================================
   # 2. ТЕСТИРОВАНИЕ (Test) — восстанавливаем и собираем тесты
@@ -254,7 +272,6 @@ jobs:
           echo "📄 Contents of TestResults:"
           ls -la TestResults/ || echo "No such directory"
 
-
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v6
@@ -262,7 +279,6 @@ jobs:
           name: test-results
           path: TestResults/results.trx
           retention-days: 5
-
 
   # ===================================================================
   # 3. ПАКОВКА ДЛЯ ПРОВЕРКИ (Pack Validation) — только в PR
@@ -323,7 +339,6 @@ jobs:
           name: validated-package
           path: ./artifacts/*.nupkg
           if-no-files-found: warn
-
 
   # ===================================================================
   # 4. ПУБЛИКАЦИЯ (Publish) — только при публикации релиза
