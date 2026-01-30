@@ -1,0 +1,17 @@
+{
+  "name": "moneytowords-fsharp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "F# library for converting numbers to words",
+  "scripts": {
+    "docs": "dotnet fsi .github/scripts/generate-contributing.fsx",
+    "format": "fantomas .github/scripts/generate-contributing.fsx",
+    "format:check": "fantomas --check .github/scripts/generate-contributing.fsx",
+    "verify": "npm run docs && git diff --exit-code CONTRIBUTING.md || (echo '❌ CONTRIBUTING.md out of date!' && exit 1) && npm run format:check",
+    "ci-check": "npm run verify"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "npm@11.8.0"
+}
