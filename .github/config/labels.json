@@ -1,0 +1,256 @@
+[
+  {
+    "name": "feature",
+    "color": "1D76DB",
+    "description": "New functionality",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "minor"
+  },
+  {
+    "name": "fix",
+    "color": "D93F0B",
+    "description": "Bug fix",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "docs",
+    "color": "0E8A16",
+    "description": "Documentation changes",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "refactor",
+    "color": "795E26",
+    "description": "Code restructuring",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "chore",
+    "color": "0052CC",
+    "description": "Maintenance task",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "test",
+    "color": "795E26",
+    "description": "Test changes",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "ci",
+    "color": "5319E7",
+    "description": "CI/CD pipeline",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "security",
+    "color": "B60205",
+    "description": "Security issue",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "major"
+  },
+  {
+    "name": "license",
+    "color": "0052CC",
+    "description": "License compliance",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "patch",
+    "color": "22863A",
+    "description": "Patch release",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "patch"
+  },
+  {
+    "name": "minor",
+    "color": "79B8FF",
+    "description": "Minor release",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "minor"
+  },
+  {
+    "name": "major",
+    "color": "B60205",
+    "description": "Major breaking change",
+    "group": "behavioral",
+    "inRelease": true,
+    "versionEffect": "major"
+  },
+  {
+    "name": "draft",
+    "color": "6A737D",
+    "description": "Work in progress",
+    "group": "behavioral",
+    "inRelease": false
+  },
+  {
+    "name": "ready-for-review",
+    "color": "2188FF",
+    "description": "Ready for review",
+    "group": "behavioral",
+    "inRelease": false
+  },
+  {
+    "name": "changes-requested",
+    "color": "D93F0B",
+    "description": "Changes requested",
+    "group": "behavioral",
+    "inRelease": false
+  },
+
+  {
+    "name": "type:bug",
+    "color": "D93F0B",
+    "description": "Reported bug",
+    "group": "type",
+    "inRelease": false
+  },
+  {
+    "name": "type:feature",
+    "color": "1D76DB",
+    "description": "New feature request",
+    "group": "type",
+    "inRelease": false
+  },
+  {
+    "name": "type:question",
+    "color": "D4C5F9",
+    "description": "Question",
+    "group": "type",
+    "inRelease": false
+  },
+  {
+    "name": "type:discussion",
+    "color": "D4C5F9",
+    "description": "Architecture discussion",
+    "group": "type",
+    "inRelease": false
+  },
+  {
+    "name": "type:help-wanted",
+    "color": "0052CC",
+    "description": "Help wanted",
+    "group": "type",
+    "inRelease": false
+  },
+  {
+    "name": "type:good-first-issue",
+    "color": "7057FF",
+    "description": "Good for beginners",
+    "group": "type",
+    "inRelease": false
+  },
+
+  {
+    "name": "area:core",
+    "color": "1D76DB",
+    "description": "Core library code",
+    "group": "area",
+    "inRelease": false
+  },
+  {
+    "name": "area:tests",
+    "color": "795E26",
+    "description": "Test code",
+    "group": "area",
+    "inRelease": false
+  },
+  {
+    "name": "area:examples",
+    "color": "0E8A16",
+    "description": "Example projects",
+    "group": "area",
+    "inRelease": false
+  },
+  {
+    "name": "area:ci",
+    "color": "5319E7",
+    "description": "CI/CD workflows",
+    "group": "area",
+    "inRelease": false
+  },
+  {
+    "name": "area:docs",
+    "color": "0E8A16",
+    "description": "Documentation",
+    "group": "area",
+    "inRelease": false
+  },
+
+  {
+    "name": "priority:critical",
+    "color": "B60205",
+    "description": "Critical priority",
+    "group": "priority",
+    "inRelease": false
+  },
+  {
+    "name": "priority:high",
+    "color": "D93F0B",
+    "description": "High priority",
+    "group": "priority",
+    "inRelease": false
+  },
+  {
+    "name": "priority:medium",
+    "color": "79B8FF",
+    "description": "Medium priority",
+    "group": "priority",
+    "inRelease": false
+  },
+  {
+    "name": "priority:low",
+    "color": "6A737D",
+    "description": "Low priority",
+    "group": "priority",
+    "inRelease": false
+  },
+
+  {
+    "name": "effort:small",
+    "color": "22863A",
+    "description": "Small effort (1-2h)",
+    "group": "effort",
+    "inRelease": false
+  },
+  {
+    "name": "effort:medium",
+    "color": "79B8FF",
+    "description": "Medium effort (1d)",
+    "group": "effort",
+    "inRelease": false
+  },
+  {
+    "name": "effort:large",
+    "color": "D93F0B",
+    "description": "Large effort (2+d)",
+    "group": "effort",
+    "inRelease": false
+  },
+  {
+    "name": "effort:huge",
+    "color": "B60205",
+    "description": "Huge effort (week+)",
+    "group": "effort",
+    "inRelease": false
+  }
+]

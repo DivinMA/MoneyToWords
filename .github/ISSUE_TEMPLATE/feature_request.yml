@@ -1,13 +1,17 @@
 name: 💡 Предложить фичу
 description: У вас есть идея для улучшения?
 title: "Feature: "
-labels: enhancement
+labels: type:feature, feature, minor
 assignees: DivinMA
 body:
   - type: markdown
     attributes:
       value: |
         Спасибо за идею! Расскажите, что вы хотите добавить.
+
+        💡 Подсказка:
+        - Лейбл `minor` будет добавлен автоматически при создании PR с веткой `feat/...`
+        - Если есть обратная несовместимость — добавьте `major`
 
   - type: textarea
     attributes:
@@ -38,3 +42,29 @@ body:
     attributes:
       label: Альтернативы
       description: Были ли другие варианты? Почему выбран этот?
+
+  - type: dropdown
+    attributes:
+      label: Приоритет
+      description: Насколько важно это изменение?
+      options:
+        - Не знаю (оставьте по умолчанию)
+        - priority:low
+        - priority:medium
+        - priority:high
+        - priority:critical
+    validations:
+      required: false
+
+  - type: dropdown
+    attributes:
+      label: Оценка сложности
+      description: Сколько времени займёт реализация?
+      options:
+        - Не знаю
+        - effort:small (1-2 часа)
+        - effort:medium (1 день)
+        - effort:large (2+ дня)
+        - effort:huge (неделя+)
+    validations:
+      required: false
