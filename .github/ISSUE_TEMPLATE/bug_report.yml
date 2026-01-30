@@ -1,7 +1,7 @@
-name: 🐞 Сообщить об ошибке
+name: 🐞 Сообщить об ошибку
 description: Опишите баг, который вы нашли
 title: "Bug: "
-labels: bug
+labels: type:bug, fix, patch
 assignees: DivinMA
 body:
   - type: markdown
@@ -10,6 +10,10 @@ body:
         Спасибо, что помогаете улучшать проект!
 
         Пожалуйста, заполните форму — это поможет быстрее разобраться.
+
+        💡 Подсказка:
+        - Лейбл `patch` будет добавлен автоматически при создании PR с веткой `fix/...`
+        - Если баг критичный — мейнтейнер добавит `priority:critical`
 
   - type: textarea
     attributes:

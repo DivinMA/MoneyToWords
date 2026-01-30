@@ -1,13 +1,17 @@
 name: ❓ Задать вопрос
 description: Не понимаете, как что-то работает?
 title: "Question: "
-labels: question
+labels: type:question, priority:low
 assignees: DivinMA
 body:
   - type: markdown
     attributes:
       value: |
         Задайте свой вопрос — постараемся помочь!
+
+        🔍 Перед тем, как задать:
+        - Проверьте [README.md](https://github.com/DivinMA/MoneyToWords/blob/main/README.md)
+        - Изучите [CONTRIBUTING.md](https://github.com/DivinMA/MoneyToWords/blob/main/CONTRIBUTING.md)
 
   - type: textarea
     attributes:
