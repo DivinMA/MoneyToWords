@@ -2,6 +2,7 @@ name: Sync Labels
 
 on:
   push:
+    branches: [ main, staging ]
     paths:
       - '.github/config/labels.json'
   workflow_dispatch:  # Можно запустить вручную
