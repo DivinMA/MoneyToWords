@@ -13,6 +13,7 @@
     "ci-check": "npm run check-generated && npm run format:check && npm run type-check",
     "labels:sync": "dotnet fsi .github/scripts/sync-labels.fsx",
     "labels:sync:dry-run": "dotnet fsi .github/scripts/sync-labels.fsx -- --dry-run --quiet",
+    "labels:sync:dry-run:verbose": "dotnet fsi .github/scripts/sync-labels.fsx -- --dry-run",
     "setup": "npm install && npm run labels:sync"
   },
   "engines": {
