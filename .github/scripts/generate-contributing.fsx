@@ -262,9 +262,7 @@ CI проверяет, что есть patch/minor/major.
 
 let generationNote =
     sprintf
-        "> ⚙️ Сгенерировано автоматически • %s • %s"
-        "generate-contributing.fsx"
-        (DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm UTC"))
+        "> ⚙️ ⚙️ Сгенерировано автоматически • система документации"
 
 let markdownContent =
     header
