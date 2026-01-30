@@ -126,4 +126,4 @@ CI проверяет, что есть patch/minor/major.
 Если возникнут вопросы — см. задачу [#11: Настройка автоматизации](https://github.com/DivinMA/MoneyToWords/issues/11)
 
 ---
-> ⚙️ Сгенерировано автоматически • generate-contributing.fsx • 2026-01-30 06:57 UTC
+> ⚙️ Сгенерировано автоматически • generate-contributing.fsx • 2026-01-30 11:57 UTC
