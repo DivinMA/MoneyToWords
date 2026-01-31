@@ -1,0 +1,23 @@
+{
+  "name": "moneytowords-fsharp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "F# library for converting numbers to words",
+  "scripts": {
+    "docs": "dotnet fsi .github/scripts/generate-contributing.fsx",
+    "format": "find .github/scripts -name \"*.fsx\" -exec fantomas {} \\;",
+    "format:check": "find .github/scripts -name \"*.fsx\" -exec fantomas --check {} \\; || exit 1",
+    "type-check": "find .github/scripts -name \"*.fsx\" -exec dotnet fsi --check {} \\; || exit 1",
+    "verify": "npm run docs && npm run check-generated",
+    "check-generated": "git diff --exit-code CONTRIBUTING.md || (echo '❌ CONTRIBUTING.md out of date!' && echo '💡 Run: npm run docs && git add CONTRIBUTING.md' && exit 1)",
+    "ci-check": "npm run check-generated && npm run format:check && npm run type-check",
+    "labels:sync": "dotnet fsi .github/scripts/sync-labels.fsx",
+    "labels:sync:dry-run": "dotnet fsi .github/scripts/sync-labels.fsx -- --dry-run --quiet",
+    "labels:sync:dry-run:verbose": "dotnet fsi .github/scripts/sync-labels.fsx -- --dry-run",
+    "setup": "npm install && npm run labels:sync"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "npm@11.8.0"
+}
