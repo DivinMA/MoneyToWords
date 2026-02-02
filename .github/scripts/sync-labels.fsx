@@ -382,6 +382,7 @@ let applyChanges (plan: SyncPlan) =
 // 14. Основной поток
 // ==============================================================================
 
+// === Публикуем комментарий в PR, если нужно ===
 let syncLabels () =
     ensurePowerShell()
     ensureLoggedIn()
@@ -401,15 +402,61 @@ let syncLabels () =
         log "🚀 В CI изменения применяются автоматически."
         exit 0
 
-    applyChanges plan
+    // === Применяем изменения ===
+    let errors = applyChanges plan
+
+    // === Функция: опубликовать комментарий в PR ===
+    let postPrComment () =
+        let prNumber = Environment.GetEnvironmentVariable("PR_NUMBER")
+        if String.IsNullOrEmpty prNumber then
+            log "⏭️  PR_NUMBER не задан — пропуск комментария"
+        else
+            let sb = StringBuilder()
+            sb.AppendLine("### 🔄 Синхронизация меток завершена") |> ignore
+
+            if not plan.Missing.IsEmpty then
+                sb.AppendLine($"- ✅ Создано: {Set.count plan.Missing}") |> ignore
+            if not plan.ToDeprecate.IsEmpty then
+                sb.AppendLine($"- 🟡 Помечено как deprecated: {Set.count plan.ToDeprecate}") |> ignore
+            if not plan.ToDelete.IsEmpty then
+                sb.AppendLine($"- 🗑️ Удалено: {Set.count plan.ToDelete}") |> ignore
+            if not plan.Outdated.IsEmpty then
+                sb.AppendLine($"- 🔄 Обновлено: {List.length plan.Outdated}") |> ignore
+
+            if errors = 0 then
+                sb.AppendLine("\n🎉 Все изменения применены успешно.") |> ignore
+            else
+                sb.AppendLine($"\n⚠️ Ошибок: {errors}") |> ignore
+
+            let body = sb.ToString().Replace("'", "\\'")
+            let cmd = sprintf "gh issue comment %s --body '%s'" prNumber body
+
+            log "💬 Публикуем комментарий в PR..."
+            let (_, code) = runCommand cmd
+            if code = 0 then
+                log "✅ Комментарий добавлен"
+            else
+                logError "❌ Не удалось добавить комментарий"
+
+    // === Вызов комментария, если были изменения ===
+    let totalChanges =
+        plan.Missing.Count +
+        plan.ToDeprecate.Count +
+        plan.ToDelete.Count +
+        plan.Outdated.Length
+
+    if totalChanges > 0 then
+        postPrComment()
+
+    // === Завершаем с кодом ошибки ===
+    exit errors  // ← это выражение завершает блок
 
 // ==============================================================================
 // 15. Запуск
 // ==============================================================================
 
 try
-    let result = syncLabels()
-    exit result
+    syncLabels()  // уже делает exit
 with ex ->
     logError $"❌ Критическая ошибка: {ex.Message}"
     exit 1
