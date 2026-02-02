@@ -3,19 +3,19 @@ tag-template: 'v$RESOLVED_VERSION'
 
 categories:
   - title: '🚀 Features'
-    labels: [feature, enhancement, feat, 'type:feature']
+    labels: [ 'type:feature', 'feat' ]
   - title: '🐛 Bug Fixes'
-    labels: [fix, bug, 'type:fix']
+    labels: [ 'type:bug', 'fix' ]
   - title: '🔧 Improvements'
-    labels: [improvement, optimize]
+    labels: [ improvement, optimize ]
   - title: '🧹 Refactoring'
-    labels: [refactor, 'code-quality']
+    labels: [ 'type:refactor', 'code-quality' ]
   - title: '📚 Documentation'
-    labels: [docs, documentation]
+    labels: [ 'type:docs', documentation ]
   - title: '⚙️ Maintenance'
-    labels: [chore, ci, dependencies, 'dependency-update']
+    labels: [ 'type:chore', dependencies, 'dependency-update' ]
   - title: '💥 Breaking Changes'
-    labels: [breaking, major, 'backwards-incompatible']
+    labels: [ major, breaking, 'backwards-incompatible' ]
 
 exclude-labels:
   - ignore-for-release
@@ -23,9 +23,9 @@ exclude-labels:
   - draft
 
 version-resolver:
-  major: { labels: [major, breaking, 'backwards-incompatible'] }
-  minor: { labels: [feature, enhancement, feat] }
-  patch: { labels: [fix, bug, docs, chore, ci] }
+  major: { labels: [ major, breaking, 'backwards-incompatible' ] }
+  minor: { labels: [ 'type:feature', feat, enhancement ] }
+  patch: { labels: [ 'type:bug', fix, 'type:docs', docs, 'type:chore', 'type:refactor', ci ] }
   default: patch
 
 change-template: '- $TITLE (#$NUMBER)'

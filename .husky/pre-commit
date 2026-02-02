@@ -1,0 +1,28 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Pre-commit: проверка системы меток..."
+
+# Если изменился labels.json — обновляем документацию
+if git diff --cached --name-only | grep -q "\.github/config/labels.json"; then
+  echo "🔄 Обнаружено изменение в .github/config/labels.json"
+  echo "📄 Генерируем CONTRIBUTING.md..."
+  dotnet fsi .github/scripts/generate-contributing.fsx
+  if [ $? -ne 0 ]; then
+    echo "❌ Ошибка: не удалось сгенерировать CONTRIBUTING.md"
+    exit 1
+  fi
+  git add CONTRIBUTING.md
+  echo "✅ CONTRIBUTING.md обновлён и добавлен в коммит"
+fi
+
+# Проверяем консистентность системы меток
+echo "🧪 Запуск sync-labels.fsx --dry-run..."
+dotnet fsi .github/scripts/sync-labels.fsx --dry-run
+
+if [ $? -ne 0 ]; then
+  echo "❌ Ошибки в системе меток. Исправьте перед коммитом."
+  exit 1
+fi
+
+echo "✅ Все проверки пройдены — коммит разрешён"
