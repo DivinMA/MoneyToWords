@@ -1,22 +1,16 @@
-/// <summary>
-/// Полная синхронизация лейблов GitHub с labels.json.
-/// Добавляет отсутствующие, удаляет лишние (кроме разрешённых).
-/// Поддерживает --dry-run и --quiet.
-/// Кроссплатформенный: работает на Windows, Linux, macOS, в CI.
-/// Совместимо с .NET 10 и F# 10.
-/// </summary>
-
 #r "nuget: Newtonsoft.Json"
 
 open System
 open System.IO
 open System.Runtime.InteropServices
 open System.Text
+open System.Threading
+open System.Diagnostics
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 
 // ==============================================================================
-// 0. Определение платформы
+// 0. Платформа
 // ==============================================================================
 
 #if !WINDOWS
@@ -33,239 +27,374 @@ let scriptDir = __SOURCE_DIRECTORY__
 let labelsJsonPath = Path.Combine(scriptDir, "../config/labels.json")
 
 // ==============================================================================
-// 2. Разрешённые стандартные лейблы
+// 2. Разрешённые метки (не удаляем)
 // ==============================================================================
 
-let allowedLabels = set [
-    "bug"
-    "chore"
-    "documentation"
-    "duplicate"
-    "enhancement"
-    "good first issue"
-    "help wanted"
-    "invalid"
-    "major"
-    "minor"
-    "patch"
-    "question"
-    "wontfix"
-]
+let allowedLabels =
+    set [
+        "duplicate"
+        "invalid"
+        "wontfix"
+        "question"
+        "help wanted"
+        "good first issue"
+    ]
 
 // ==============================================================================
-// 3. Аргументы командной строки
+// 3. Аргументы и режим
 // ==============================================================================
 
 let args = fsi.CommandLineArgs |> Array.skip 1
 
-let isDryRun = Array.contains "--dry-run" args
+let ciEnv = Environment.GetEnvironmentVariable("CI") = "true"
+let hasApplyFlag = Array.contains "--apply" args
 let isQuiet = Array.contains "--quiet" args
 
-if isDryRun && not isQuiet then
-    printfn "🧪 Режим: DRY RUN — изменения не будут применены"
+let isDryRun = not ciEnv && not hasApplyFlag
+
+if not isQuiet then
+    printfn "⚙️  Среда: CI=%b, Args=[%s]" ciEnv (String.concat ", " args)
+    if isDryRun then
+        printfn "🧪 Режим: DRY RUN — изменения не будут применены (используйте --apply)"
+    else
+        printfn "🚀 Режим: APPLY — изменения будут применены"
 
 // ==============================================================================
-// 4. Вспомогательные функции
+// 4. Логирование
 // ==============================================================================
 
-let log message =
-    if not isQuiet then
-        printfn "%s" message
+let log msg = if not isQuiet then printfn "%s" msg
+let logError msg = eprintfn "%s" msg
 
-let logError message =
-    eprintfn "%s" message
-
-/// Экранирует строку для безопасного использования в PowerShell
-let escapePowerShell (s: string) =
-    s.Replace("\\", "\\\\")
-     .Replace("\"", "\\\"")
-     .Replace("$", "`$")
-     .Replace("`", "``")
-     .Replace("(", "`(")
-     .Replace(")", "`)") 
-     .Replace("^", "^^")
-     .Replace("&", "`&")
-     .Replace("|", "`|")
-     .Replace("<", "`<")
-     .Replace(">", "`>")
-     .Replace("@", "`@")
-     .Replace("'", "`'")
+// ==============================================================================
+// 5. Выполнение команд
+// ==============================================================================
 
 let runCommand (cmd: string) : string * int =
-    let psi =
-        if isWindows then
-            let cmdBytes = Text.Encoding.Unicode.GetBytes(cmd)
-            let encoded = Convert.ToBase64String(cmdBytes)
-            System.Diagnostics.ProcessStartInfo("pwsh", $"-NoProfile -EncodedCommand {encoded}")
-        else
-            let escaped = cmd.Replace("\\", "\\\\").Replace("\"", "\\\"")
-            System.Diagnostics.ProcessStartInfo("bash", $"-c \"exec {escaped}\"")
+    let startInfo = ProcessStartInfo()
+    startInfo.UseShellExecute <- false
+    startInfo.RedirectStandardOutput <- true
+    startInfo.RedirectStandardError <- true
+    startInfo.CreateNoWindow <- true
 
-    psi.UseShellExecute <- false
-    psi.RedirectStandardOutput <- true
-    psi.RedirectStandardError <- true
-    psi.CreateNoWindow <- true
+    startInfo.FileName <-
+        if isWindows then "pwsh" else "bash"
 
-    use proc = System.Diagnostics.Process.Start(psi)
-    proc.WaitForExit()
-    let output = proc.StandardOutput.ReadToEnd()
-    let error = proc.StandardError.ReadToEnd()
-    if not (String.IsNullOrEmpty error) then
-        eprintfn "[STDERR] %s" error
-    output.Trim(), proc.ExitCode
+    startInfo.Arguments <-
+        if isWindows then sprintf "-NoProfile -Command \"%s\"" cmd
+        else sprintf "-c \"%s\"" cmd
+
+    use proc = new Process()
+    proc.StartInfo <- startInfo
+
+    let output = StringBuilder()
+    let error = StringBuilder()
+
+    proc.OutputDataReceived.Add(fun args ->
+        if args.Data <> null then output.AppendLine(args.Data) |> ignore)
+
+    proc.ErrorDataReceived.Add(fun args ->
+        if args.Data <> null then error.AppendLine(args.Data) |> ignore)
+
+    proc.Start() |> ignore
+    proc.BeginOutputReadLine()
+    proc.BeginErrorReadLine()
+
+    let finished = proc.WaitForExit(30000)
+
+    if not finished then
+        try proc.Kill() with _ -> ()
+        logError "❌ Команда прервана по таймауту"
+        "", 1
+    else
+        let out = output.ToString().Trim()
+        let err = error.ToString().Trim()
+        if not (String.IsNullOrEmpty err) then logError ("STDERR: " + err)
+        out, proc.ExitCode
+
+// ==============================================================================
+// 6. Проверки окружения
+// ==============================================================================
 
 let ensurePowerShell () =
     if isWindows then
-        log "🔧 Проверка наличия PowerShell Core (pwsh)..."
-        let (output, exitCode) = runCommand "pwsh --version"
-        if exitCode <> 0 then
-            logError "❌ Требуется PowerShell Core (pwsh)"
-            logError "Установите: https://aka.ms/powershell"
+        log "🔧 Проверка pwsh..."
+        let (out, code) = runCommand "pwsh --version"
+        if code <> 0 then
+            logError "❌ Требуется PowerShell Core"
             exit 1
         elif not isQuiet then
-            log $"✅ pwsh найден: {output}"
+            log $"✅ pwsh найден: {out}"
 
 let ensureLoggedIn () =
-    log "🔐 Проверка авторизации в GitHub CLI..."
-    let (output, exitCode) = runCommand "gh auth status"
-    if exitCode <> 0 then
+    log "🔐 Проверка авторизации в gh..."
+    let (out, code) = runCommand "gh auth status"
+    if code <> 0 then
         logError "❌ Не авторизован в GitHub CLI"
-        logError "Запустите: gh auth login"
+        logError "Выполните: gh auth login"
         exit 1
-    elif not isQuiet then
+    else
         log "✅ Авторизация подтверждена"
 
-// ==============================================================================
-// 5. Получение текущих лейблов
-// ==============================================================================
-
-let getCurrentLabels () : (string * string * string) list =
-    log "🔍 Получаем текущие лейблы из GitHub..."
-    let (output, exitCode) = runCommand "gh label list --json name,color,description --jq '.[] | {name: .name, color: .color, description: .description}'"
-    
-    if exitCode <> 0 then
-        logError $"❌ Ошибка получения лейблов: {output}"
-        exit 1
-
-    if String.IsNullOrEmpty output then
-        []
-    else
-        output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map (fun line ->
-            try
-                let jobj = JsonConvert.DeserializeObject<JObject>(line)
-                jobj.Value<string>("name"),
-                jobj.Value<string>("color"),
-                Option.ofObj (jobj.Value<string>("description")) |> Option.defaultValue ""
-            with _ -> "", "", ""
-        )
-        |> Array.filter (fun (n, _, _) -> not (String.IsNullOrEmpty n))
-        |> List.ofArray
+let wasLabelUsed (name: string) =
+    let safeName = name.Replace("'", "\\'")
+    let cmd = sprintf "gh search issues --label '%s' --json number --limit 1" safeName
+    let (_, code) = runCommand cmd
+    code = 0
 
 // ==============================================================================
-// 6. Чтение ожидаемых лейблов
+// 7. Модель
 // ==============================================================================
 
-let getExpectedLabelsMap () : Map<string, JObject> =
+type Label = {
+    Name: string
+    Color: string
+    Description: string
+}
+
+// ==============================================================================
+// 8. Чтение ожидаемых меток
+// ==============================================================================
+
+let getExpectedLabels () : Label list =
     if not (File.Exists labelsJsonPath) then
         logError $"❌ Файл не найден: {labelsJsonPath}"
         exit 1
 
-    let json = File.ReadAllText(labelsJsonPath)
-    let jarray = JsonConvert.DeserializeObject<JArray>(json)
+    try
+        let json = File.ReadAllText labelsJsonPath
+        let jarray = JsonConvert.DeserializeObject<JArray>(json)
 
-    jarray
-    |> Seq.cast<JObject>
-    |> Seq.map (fun o -> o.Value<string>("name"), o)
-    |> Map.ofSeq
+        jarray
+        |> Seq.cast<JObject>
+        |> Seq.map (fun o ->
+            {
+                Name = o.Value<string>("name")
+                Color = o.Value<string>("color")
+                Description = defaultArg (Option.ofObj(o.Value<string>("description"))) ""
+            })
+        |> Seq.toList
+    with ex ->
+        logError $"❌ Ошибка парсинга labels.json: {ex.Message}"
+        exit 1
 
 // ==============================================================================
-// 7. Синхронизация
+// 9. Получение текущих меток
+// ==============================================================================
+
+let getCurrentLabels () : Label list =
+    log "🔍 Получаем метки из GitHub..."
+    let cmd = "gh api --paginate repos/DivinMA/MoneyToWords/labels"
+    let (output, code) = runCommand cmd
+
+    if code <> 0 || String.IsNullOrWhiteSpace(output) then
+        logError "❌ Не удалось получить метки"
+        []
+    else
+        try
+            let jarray = JsonConvert.DeserializeObject<JArray>(output.Trim())
+            jarray
+            |> Seq.cast<JObject>
+            |> Seq.map (fun o ->
+                {
+                    Name = o.Value<string>("name")
+                    Color = o.Value<string>("color")
+                    Description = defaultArg (Option.ofObj(o.Value<string>("description"))) ""
+                })
+            |> Seq.toList
+        with ex ->
+            logError $"❌ Ошибка парсинга ответа: {ex.Message}"
+            []
+
+// ==============================================================================
+// 10. План синхронизации
+// ==============================================================================
+
+type SyncPlan = {
+    Missing: Set<string>
+    ToDelete: Set<string>
+    ToDeprecate: Set<string>
+    AlreadyDeprecated: Set<string>
+    Outdated: (string * Label * Label) list
+    CurrentMap: Map<string, Label>
+    ExpectedMap: Map<string, Label>
+}
+
+// ==============================================================================
+// 11. Анализ различий
+// ==============================================================================
+
+let analyzeLabels (current: Label list) (expected: Label list) =
+    let currentMap = Map [ for l in current -> l.Name, l ]
+    let expectedMap = Map [ for l in expected -> l.Name, l ]
+
+    // ✅ Явное преобразование ICollection -> seq -> Set
+    let currentNames = currentMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+    let expectedNames = expectedMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+
+    let missing = Set.difference expectedNames currentNames
+
+    let extra =
+        Set.difference currentNames expectedNames
+        |> Set.filter (fun n -> not (Set.contains n allowedLabels))
+
+    let isProperlyDeprecated (label: Label) =
+        label.Description.StartsWith("Deprecated: use corresponding type:* label instead")
+        && label.Color = "6A737D"
+
+    let alreadyDeprecated =
+        extra
+        |> Set.filter (fun name ->
+            match currentMap.TryFind name with
+            | Some label -> isProperlyDeprecated label
+            | None -> false)
+
+    let notDeprecated = Set.difference extra alreadyDeprecated
+    let usedNotDeprecated = Set.filter wasLabelUsed notDeprecated
+    let toDelete = Set.difference notDeprecated usedNotDeprecated
+    let toDeprecate = usedNotDeprecated
+
+    let outdated =
+        expectedMap
+        |> Map.toList
+        |> List.choose (fun (name, expectedLabel) ->
+            match currentMap.TryFind name with
+            | Some currentLabel when
+                currentLabel.Color <> expectedLabel.Color ||
+                currentLabel.Description <> expectedLabel.Description ->
+                Some (name, currentLabel, expectedLabel)
+            | _ -> None)
+
+    {
+        Missing = missing
+        ToDelete = toDelete
+        ToDeprecate = toDeprecate
+        AlreadyDeprecated = alreadyDeprecated
+        Outdated = outdated
+        CurrentMap = currentMap
+        ExpectedMap = expectedMap
+    }
+
+// ==============================================================================
+// 12. Вывод статуса
+// ==============================================================================
+
+let printStatus (plan: SyncPlan) =
+    log ""
+    log "📊 Состояние меток:"
+
+    let currentKeys = plan.CurrentMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+    let expectedKeys = plan.ExpectedMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+    let active = Set.intersect currentKeys expectedKeys
+
+    log $"  ✅ Актуальные: {active.Count}"
+
+    if not (Set.isEmpty plan.Missing) then
+        let names = String.concat ", " (Set.toList plan.Missing)
+        log $"  🔽 Отсутствуют: {names}"
+
+    if not (Set.isEmpty plan.ToDelete) then
+        let names = String.concat ", " (Set.toList plan.ToDelete)
+        log $"  🗑️  Будут удалены: {names}"
+
+    if not (Set.isEmpty plan.ToDeprecate) then
+        let names = String.concat ", " (Set.toList plan.ToDeprecate)
+        log $"  🟡 Будут помечены как deprecated: {names}"
+
+    if not (Set.isEmpty plan.AlreadyDeprecated) then
+        let names = String.concat ", " (Set.toList plan.AlreadyDeprecated)
+        log $"  ✅ Уже deprecated: {names}"
+
+    if not (List.isEmpty plan.Outdated) then
+        let names = plan.Outdated |> List.map (fun (n, _, _) -> n) |> String.concat ", "
+        log $"  🔄 Требуют обновления: {names}"
+
+    if plan.Missing.IsEmpty && plan.ToDelete.IsEmpty && plan.ToDeprecate.IsEmpty && plan.Outdated.IsEmpty then
+        log ""
+        log "🎉 Все метки в порядке"
+        true
+    else
+        false
+
+// ==============================================================================
+// 13. Применение изменений
+// ==============================================================================
+
+let applyChanges (plan: SyncPlan) =
+    log ""
+    log "🔁 Применяем изменения..."
+
+    let mutable errors = 0
+
+    for name in plan.Missing do
+        let lbl = plan.ExpectedMap.[name]
+        let cmd = sprintf "gh label create '%s' --force --color %s --description '%s'" name lbl.Color lbl.Description
+        log $"🔄 Создаём: {name}"
+        let (_, code) = runCommand cmd
+        if code = 0 then log $"✅ Создан: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
+        Thread.Sleep(500)
+
+    for name in plan.ToDeprecate do
+        let cmd = sprintf "gh label edit '%s' --color 6A737D --description 'Deprecated: use corresponding type:* label instead'" name
+        log $"🔄 Помечаем как deprecated: {name}"
+        let (_, code) = runCommand cmd
+        if code = 0 then log $"✅ Deprecated: {name}" else logError $"⚠️  Не удалось: {name}"; errors <- errors + 1
+        Thread.Sleep(500)
+
+    for name in plan.ToDelete do
+        let cmd = sprintf "gh label delete '%s' --yes" name
+        log $"🗑️  Удаляем: {name}"
+        let (_, code) = runCommand cmd
+        if code = 0 then log $"✅ Удалён: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
+        Thread.Sleep(500)
+
+    for (name, _, expected) in plan.Outdated do
+        let cmd = sprintf "gh label edit '%s' --color %s --description '%s'" name expected.Color expected.Description
+        log $"🔄 Обновляем: {name}"
+        let (_, code) = runCommand cmd
+        if code = 0 then log $"✅ Обновлён: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
+        Thread.Sleep(500)
+
+    log ""
+    if errors = 0 then
+        log "🎉 Синхронизация успешна"
+        0
+    else
+        logError $"❌ Ошибок: {errors}"
+        1
+
+// ==============================================================================
+// 14. Основной поток
 // ==============================================================================
 
 let syncLabels () =
     ensurePowerShell()
     ensureLoggedIn()
 
-    let currentLabels = getCurrentLabels()
-    let currentNames = currentLabels |> List.map (fun (n, _, _) -> n) |> Set.ofList
-    let expectedMap = getExpectedLabelsMap()
-    let expectedNames = Set.ofSeq expectedMap.Keys
+    let current = getCurrentLabels()
+    let expected = getExpectedLabels()
 
-    let missing = Set.difference expectedNames currentNames
-    let extra = 
-        Set.difference currentNames expectedNames
-        |> Set.filter (fun name -> not (Set.contains name allowedLabels))
+    let plan = analyzeLabels current expected
 
-    log "\n🔁 Начинаем синхронизацию..."
+    if printStatus plan then
+        log "💡 Нет изменений — завершаем."
+        exit 0
 
-    // Удаление лишних
-    if not (Set.isEmpty extra) then
-        log $"🗑️  Найдено %d{extra.Count} лишних лейблов:"
-        for name in extra do
-            log $"   - %s{name}"
+    if isDryRun then
+        log ""
+        log "💡 Это DRY RUN. Чтобы применить, используйте --apply"
+        log "🚀 В CI изменения применяются автоматически."
+        exit 0
 
-        log "\n🔄 Удаляем..."
-        let mutable deleted = 0
-        for name in extra do
-            let cmd = $"gh label delete \"{name}\" --force"
-            if isDryRun then
-                log $"   🧪 [DRY RUN] Удалить: %s{name}"
-            else
-                let (_, exitCode) = runCommand cmd
-                if exitCode = 0 then
-                    log $"   ✅ Удалён: %s{name}"
-                    deleted <- deleted + 1
-                else
-                    logError $"   ❌ Ошибка при удалении '%s{name}'"
-            System.Threading.Thread.Sleep(200) // Анти-rate limit
-        log $"   ✅ Удалено: %d{deleted}"
-    else
-        log "✅ Нет лишних лейблов"
-
-    // Добавление недостающих
-    if not (Set.isEmpty missing) then
-        log $"🆕 Найдено %d{missing.Count} новых лейблов:"
-        for name in missing do
-            log $"   - %s{name}"
-
-        log "\n➕ Добавляем..."
-        let mutable added = 0
-        for name in missing do
-            match expectedMap.TryFind name with
-            | Some labelData ->
-                let color = labelData.Value<string>("color")
-                let desc = Option.ofObj (labelData.Value<string>("description")) |> Option.defaultValue ""
-                let safeDesc = desc.Replace("\"", "\\\"")  // Для командной строки
-                let cmd = $"gh label create \"{name}\" --color \"{color}\" --description \"{safeDesc}\""
-
-                if isDryRun then
-                    log $"   🧪 [DRY RUN] Создать: %s{name}"
-                else
-                    let (output, exitCode) = runCommand cmd
-                    if exitCode = 0 || output.Contains("already exists") then
-                        log $"   ✅ Добавлен: %s{name}"
-                        added <- added + 1
-                    else
-                        logError $"   ❌ Ошибка при создании '%s{name}': %s{output}"
-            | None ->
-                logError $"❌ Лейбл '%s{name}' объявлен, но не найден в labels.json"
-            System.Threading.Thread.Sleep(200) // Анти-rate limit
-        log $"   ✅ Добавлено: %d{added}"
-    else
-        log "✅ Все лейблы уже существуют"
-
-    // Итог
-    log "\n🎉 Синхронизация завершена успешно"
-    0
+    applyChanges plan
 
 // ==============================================================================
-// 8. Запуск
+// 15. Запуск
 // ==============================================================================
 
 try
-    let exitCode = syncLabels()
-    exit exitCode
+    let result = syncLabels()
+    exit result
 with ex ->
     logError $"❌ Критическая ошибка: {ex.Message}"
     exit 1

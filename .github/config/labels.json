@@ -87,7 +87,13 @@
     "group": "type",
     "inRelease": false
   },
-
+  {
+    "name": "type:refactor",
+    "color": "795E26",
+    "description": "Code refactoring",
+    "group": "type",
+    "inRelease": false
+  },
   {
     "name": "area:core",
     "color": "1D76DB",
