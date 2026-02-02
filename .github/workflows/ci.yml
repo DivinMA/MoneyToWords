@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, staging ]
   pull_request:
-    branches: [  main, staging ]
+    branches: [ main, staging ]
   release:
     types: [ published ]
 
@@ -134,7 +134,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 🔹 Добавлено: Setup Node.js для npm
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -154,12 +153,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 🔹 Добавлено: установка npm-зависимостей
       - name: Install dependencies
         run: npm ci
-        # Если нет package-lock.json, используй: npm install
 
-      # 🔹 Добавлено: проверка всех .fsx скриптов
       - name: Verify automation scripts
         run: |
           echo "🔍 Проверка формата и синтаксиса F# скриптов..."
@@ -201,7 +197,7 @@ jobs:
           if-no-files-found: error
 
   # ===================================================================
-  # 2. ТЕСТИРОВАНИЕ (Test) — восстанавливаем и собираем тесты
+  # 2. ТЕСТИРОВАНИЕ (Test)
   # ===================================================================
   test:
     needs: build
@@ -307,6 +303,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: "🧪 Debug: Show all Git tags in CI"
+        run: |
+          echo "🔍 Fetching all tags..."
+          git fetch --prune --tags
+          echo "📦 Available tags (latest 10):"
+          git tag --list --sort=-version:refname | head -10
+
+          if git tag --list | grep -q "v1.2.0"; then
+            echo "✅ Tag v1.2.0 is present"
+          else
+            echo "❌ Tag v1.2.0 is MISSING!"
+            exit 1
+          fi
+
       - name: Restore dependencies (for pack)
         run: |
           echo "🔧 Restoring packages to generate project.assets.json"
@@ -350,7 +360,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Для MinVer
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -370,22 +380,91 @@ jobs:
         run: |
           find . -name "packages.lock.json" -type f -delete || true
 
+      - name: "🧪 Debug: Checkout info"
+        run: |
+          echo "🔍 Branch: $GITHUB_REF_NAME"
+          echo "📦 Event: $GITHUB_EVENT_NAME"
+          echo "🔖 Action: $GITHUB_EVENT_ACTION"
+          echo "🧩 Workspace: $GITHUB_WORKSPACE"
+
+      - name: "🧪 Debug: Is .git present?"
+        run: |
+          if [ -d ".git" ]; then
+            echo "✅ .git directory exists"
+            git status --porcelain || echo "Git status not available"
+          else
+            echo "❌ .git directory missing!"
+            exit 1
+          fi
+
+      - name: "🧪 Debug: Fetch all tags"
+        run: |
+          git fetch --prune --tags
+          echo "📦 Available tags (latest 10):"
+          git tag --list --sort=-version:refname | head -10
+
+      - name: "🧪 Debug: Check if v1.2.0 exists"
+        run: |
+          if git tag --list | grep -q "v1.2.0"; then
+            echo "✅ Tag v1.2.0 found"
+          else
+            echo "❌ Tag v1.2.0 NOT found"
+            exit 1
+          fi
+
+      - name: "🧪 Debug: Show MinVer-determined version"
+        run: |
+          # Проверяем свойства через MSBuild
+          echo "🔍 Reading MinVer version..."
+          MINVER=$(dotnet msbuild -nologo -getProperty:MinVerVersion /p:DesignTimeBuild=true)
+          PKGVER=$(dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true)
+          VERSION=$(dotnet msbuild -nologo -getProperty:Version /p:DesignTimeBuild=true)
+
+          echo "🔖 MinVerVersion: $MINVER"
+          echo "📦 PackageVersion: $PKGVER"
+          echo "🔖 Version: $VERSION"
+
+          if [ -z "$MINVER" ] || [ "$MINVER" = "1.0.0" ]; then
+            echo "❌ MinVer failed to detect correct version"
+            exit 1
+          fi
+
+      - name: "🧪 Debug: Full build to trigger MinVer"
+        run: |
+          echo "🔨 Building project to force MinVer evaluation..."
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords \
+            /bl:build.binlog  # Сохраняет лог для анализа
+
+
       - name: Restore dependencies
         run: dotnet restore --force-evaluate
 
-      - name: Pack with MinVer
+      - name: "🧪 Debug: Show Git tags"
+        run: |
+          git tag --list | sort -V
+          echo "🔍 Current ref: $GITHUB_REF"
+
+      - name: "🧪 Debug: Build to trigger MinVer and show version"
+        run: |
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords
+
+      - name: 📦 Pack with MinVer (now with restore)
         id: pack
         run: |
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
-            --no-restore \
             --output ./artifacts \
             /p:IncludeSymbols=true \
-            /p:SymbolPackageFormat=snupkg
+            /p:SymbolPackageFormat=snupkg \
+            /p:ContinuousIntegrationBuild=true
 
-          NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f -print -quit)
-          echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
-          echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
+      - name: 📦 Verify packaged version
+        run: |
+          find ./artifacts -name "*.nupkg" -exec echo "✅ Created package:" {} \; -exec basename {} \;
 
       - name: Publish to NuGet.org
         run: |
