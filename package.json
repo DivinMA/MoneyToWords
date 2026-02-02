@@ -4,6 +4,7 @@
   "private": true,
   "description": "F# library for converting numbers to words",
   "scripts": {
+    "prepare": "husky",
     "docs": "dotnet fsi .github/scripts/generate-contributing.fsx",
     "format": "find .github/scripts -name \"*.fsx\" -exec fantomas {} \\;",
     "format:check": "find .github/scripts -name \"*.fsx\" -exec fantomas --check {} \\; || exit 1",
@@ -19,5 +20,8 @@
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "npm@11.8.0"
+  "packageManager": "npm@11.8.0",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
 }
