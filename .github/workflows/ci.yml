@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, staging ]
   pull_request:
-    branches: [  main, staging ]
+    branches: [ main, staging ]
   release:
     types: [ published ]
 
@@ -134,7 +134,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 🔹 Добавлено: Setup Node.js для npm
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -154,12 +153,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 🔹 Добавлено: установка npm-зависимостей
       - name: Install dependencies
         run: npm ci
-        # Если нет package-lock.json, используй: npm install
 
-      # 🔹 Добавлено: проверка всех .fsx скриптов
       - name: Verify automation scripts
         run: |
           echo "🔍 Проверка формата и синтаксиса F# скриптов..."
@@ -201,7 +197,7 @@ jobs:
           if-no-files-found: error
 
   # ===================================================================
-  # 2. ТЕСТИРОВАНИЕ (Test) — восстанавливаем и собираем тесты
+  # 2. ТЕСТИРОВАНИЕ (Test)
   # ===================================================================
   test:
     needs: build
@@ -350,7 +346,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Для MinVer
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -373,19 +369,30 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore --force-evaluate
 
-      - name: Pack with MinVer
+      - name: "🧪 Debug: Show Git tags"
+        run: |
+          git tag --list | sort -V
+          echo "🔍 Current ref: $GITHUB_REF"
+
+      - name: "🧪 Debug: Build to trigger MinVer and show version"
+        run: |
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords
+
+      - name: 📦 Pack with MinVer (now with restore)
         id: pack
         run: |
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
-            --no-restore \
             --output ./artifacts \
             /p:IncludeSymbols=true \
-            /p:SymbolPackageFormat=snupkg
+            /p:SymbolPackageFormat=snupkg \
+            /p:ContinuousIntegrationBuild=true
 
-          NUPKG_FILE=$(find ./artifacts -name "*.nupkg" -type f -print -quit)
-          echo "PACKAGED_FILE=$NUPKG_FILE" >> $GITHUB_OUTPUT
-          echo "PACKAGED_FILENAME=$(basename $NUPKG_FILE)" >> $GITHUB_OUTPUT
+      - name: 📦 Verify packaged version
+        run: |
+          find ./artifacts -name "*.nupkg" -exec echo "✅ Created package:" {} \; -exec basename {} \;
 
       - name: Publish to NuGet.org
         run: |
