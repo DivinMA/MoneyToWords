@@ -330,9 +330,17 @@ let applyChanges (plan: SyncPlan) =
         let lbl = plan.ExpectedMap.[name]
         let cmd = sprintf "gh label create '%s' --force --color %s --description '%s'" name lbl.Color lbl.Description
         log $"🔄 Создаём: {name}"
-        let (_, code) = runCommand cmd
-        if code = 0 then log $"✅ Создан: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
+        let (output, code) = runCommand cmd
+        if code = 0 then
+            log $"✅ Создан: {name}"
+        elif output.Contains("already exists") then
+            log $"🟡 Уже существует: {name} (пропущено)"
+        else
+            logError $"❌ Ошибка: {name}"
+            logError $"   Вывод: {output}"
+            errors <- errors + 1
         Thread.Sleep(500)
+
 
     for name in plan.ToDeprecate do
         let cmd = sprintf "gh label edit '%s' --color 6A737D --description 'Deprecated: use corresponding type:* label instead'" name
