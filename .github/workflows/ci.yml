@@ -303,6 +303,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: "🧪 Debug: Show all Git tags in CI"
+        run: |
+          echo "🔍 Fetching all tags..."
+          git fetch --prune --tags
+          echo "📦 Available tags (latest 10):"
+          git tag --list --sort=-version:refname | head -10
+
+          if git tag --list | grep -q "v1.2.0"; then
+            echo "✅ Tag v1.2.0 is present"
+          else
+            echo "❌ Tag v1.2.0 is MISSING!"
+            exit 1
+          fi
+
       - name: Restore dependencies (for pack)
         run: |
           echo "🔧 Restoring packages to generate project.assets.json"
