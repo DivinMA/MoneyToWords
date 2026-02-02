@@ -15,20 +15,11 @@
 | Лейбл | Цвет | Описание | Участвует в релизе? |
 |------|------|--------|-------------------|
 | `changes-requested` | <code style="background:#D93F0B; color:white">  </code> | Changes requested | ❌ Нет |
-| `chore` | <code style="background:#0052CC; color:white">  </code> | Maintenance task | ✅ Да (patch) |
-| `ci` | <code style="background:#5319E7; color:white">  </code> | CI/CD pipeline | ✅ Да (patch) |
-| `docs` | <code style="background:#0E8A16; color:white">  </code> | Documentation changes | ✅ Да (patch) |
 | `draft` | <code style="background:#6A737D; color:white">  </code> | Work in progress | ❌ Нет |
-| `feature` | <code style="background:#1D76DB; color:white">  </code> | New functionality | ✅ Да (minor) |
-| `fix` | <code style="background:#D93F0B; color:white">  </code> | Bug fix | ✅ Да (patch) |
-| `license` | <code style="background:#0052CC; color:white">  </code> | License compliance | ✅ Да (patch) |
 | `major` | <code style="background:#B60205; color:white">  </code> | Major breaking change | ✅ Да (major) |
 | `minor` | <code style="background:#79B8FF; color:white">  </code> | Minor release | ✅ Да (minor) |
 | `patch` | <code style="background:#22863A; color:white">  </code> | Patch release | ✅ Да (patch) |
 | `ready-for-review` | <code style="background:#2188FF; color:white">  </code> | Ready for review | ❌ Нет |
-| `refactor` | <code style="background:#795E26; color:white">  </code> | Code restructuring | ✅ Да (patch) |
-| `security` | <code style="background:#B60205; color:white">  </code> | Security issue | ✅ Да (major) |
-| `test` | <code style="background:#795E26; color:white">  </code> | Test changes | ✅ Да (patch) |
 
 ---
 
@@ -42,6 +33,7 @@
 | `type:good-first-issue` | Good for beginners |
 | `type:help-wanted` | Help wanted |
 | `type:question` | Question |
+| `type:refactor` | Code refactoring |
 
 #### `area:...` — область кода
 

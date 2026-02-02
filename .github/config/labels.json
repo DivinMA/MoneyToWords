@@ -1,77 +1,5 @@
 [
   {
-    "name": "feature",
-    "color": "1D76DB",
-    "description": "New functionality",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "minor"
-  },
-  {
-    "name": "fix",
-    "color": "D93F0B",
-    "description": "Bug fix",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
-    "name": "docs",
-    "color": "0E8A16",
-    "description": "Documentation changes",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
-    "name": "refactor",
-    "color": "795E26",
-    "description": "Code restructuring",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
-    "name": "chore",
-    "color": "0052CC",
-    "description": "Maintenance task",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
-    "name": "test",
-    "color": "795E26",
-    "description": "Test changes",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
-    "name": "ci",
-    "color": "5319E7",
-    "description": "CI/CD pipeline",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
-    "name": "security",
-    "color": "B60205",
-    "description": "Security issue",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "major"
-  },
-  {
-    "name": "license",
-    "color": "0052CC",
-    "description": "License compliance",
-    "group": "behavioral",
-    "inRelease": true,
-    "versionEffect": "patch"
-  },
-  {
     "name": "patch",
     "color": "22863A",
     "description": "Patch release",
@@ -159,7 +87,13 @@
     "group": "type",
     "inRelease": false
   },
-
+  {
+    "name": "type:refactor",
+    "color": "795E26",
+    "description": "Code refactoring",
+    "group": "type",
+    "inRelease": false
+  },
   {
     "name": "area:core",
     "color": "1D76DB",

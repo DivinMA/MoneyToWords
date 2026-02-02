@@ -1,48 +1,3 @@
-# 🔹 Поведенческие
-
-"feature":
-  - head-branch: ["^feat/", "^feature/"]
-  - changed-files:
-      - any-glob-to-any-file: "src/**/*"
-
-"fix":
-  - head-branch: ["^fix/", "bugfix", "^hotfix/"]
-  - changed-files:
-      - any-glob-to-any-file: "src/**/*.fs"
-      - any-glob-to-any-file: "tests/**/*"
-
-"docs":
-  - changed-files:
-      - any-glob-to-any-file: "docs/**/*"
-      - any-glob-to-any-file: "**/*.md"
-  - head-branch: ["^docs/", "readme"]
-
-"refactor":
-  - head-branch: ["^refactor/", "cleanup"]
-  - changed-files:
-      - any-glob-to-any-file: "src/**/*"
-
-"chore":
-  - head-branch: ["^chore/", "maintenance"]
-  - changed-files:
-      - any-glob-to-any-file: "build.fsx"
-      - any-glob-to-any-file: "Directory.Build.props"
-
-"test":
-  - changed-files:
-      - any-glob-to-any-file: "tests/**/*"
-      - any-glob-to-any-file: "**/*Tests*.fs"
-
-"ci":
-  - changed-files:
-      - any-glob-to-any-file: ".github/workflows/**/*"
-  - head-branch: ["^ci/", "pipeline"]
-
-"security":
-  - head-branch: ["^security/", "vuln"]
-  - changed-files:
-      - any-glob-to-any-file: "**/security.*"
-
 # 🔹 Версионирование
 
 "patch":
@@ -84,16 +39,42 @@
 # 🔹 Типы задач
 
 "type:feature":
-  - head-branch: ["^feat/", "^feature/"]
+  - head-branch: ["^feat/", "^feature/", "^enhancement/"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*"
 
 "type:bug":
-  - head-branch: ["^fix/", "bugfix"]
+  - head-branch: ["^fix/", "bugfix", "^hotfix/"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*.fs"
+      - any-glob-to-any-file: "tests/**/*"
 
-"type:question":
-  - head-branch: ["^question/", "ask"]
+"type:docs":
+  - changed-files:
+      - any-glob-to-any-file: "docs/**/*"
+      - any-glob-to-any-file: "**/*.md"
+  - head-branch: ["^docs/", "readme"]
 
-"type:discussion":
-  - head-branch: ["^discuss/", "arch"]
+"type:refactor":
+  - head-branch: ["^refactor/", "cleanup"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*"
+
+"type:chore":
+  - head-branch: ["^chore/", "maintenance"]
+  - changed-files:
+      - any-glob-to-any-file: "build.fsx"
+      - any-glob-to-any-file: "Directory.Build.props"
+
+"type:test":
+  - changed-files:
+      - any-glob-to-any-file: "tests/**/*"
+      - any-glob-to-any-file: "**/*Tests*.fs"
+
+"type:ci":
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**/*"
+  - head-branch: ["^ci/", "pipeline"]
 
 # 🔹 Приоритеты
 
