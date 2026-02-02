@@ -33,6 +33,7 @@
 | `type:good-first-issue` | Good for beginners |
 | `type:help-wanted` | Help wanted |
 | `type:question` | Question |
+| `type:refactor` | Code refactoring |
 
 #### `area:...` — область кода
 
