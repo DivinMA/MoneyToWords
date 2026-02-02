@@ -46,18 +46,25 @@ let allowedLabels =
 
 let args = fsi.CommandLineArgs |> Array.skip 1
 
-let ciEnv = Environment.GetEnvironmentVariable("CI") = "true"
-let hasApplyFlag = Array.contains "--apply" args
+let hasApply = Array.contains "--apply" args
+let hasDryRun = Array.contains "--dry-run" args
 let isQuiet = Array.contains "--quiet" args
 
-let isDryRun = not ciEnv && not hasApplyFlag
+let isDryRun =
+    if hasDryRun then true
+    elif hasApply then false
+    else Environment.GetEnvironmentVariable("CI") <> "true"
 
 if not isQuiet then
-    printfn "⚙️  Среда: CI=%b, Args=[%s]" ciEnv (String.concat ", " args)
+    printfn "⚙️  Режим выполнения:"
     if isDryRun then
-        printfn "🧪 Режим: DRY RUN — изменения не будут применены (используйте --apply)"
+        printfn "   🧪 --dry-run: изменения НЕ будут применены"
     else
-        printfn "🚀 Режим: APPLY — изменения будут применены"
+        printfn "   🚀 --apply: изменения БУДУТ применены"
+    
+    if hasApply then printfn "   📌 Флаг: --apply"
+    if hasDryRun then printfn "   📌 Флаг: --dry-run"
+    printfn "   🌐 Среда: CI=%b" (Environment.GetEnvironmentVariable("CI") = "true")
 
 // ==============================================================================
 // 4. Логирование
