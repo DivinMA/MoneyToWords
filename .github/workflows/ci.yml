@@ -366,6 +366,64 @@ jobs:
         run: |
           find . -name "packages.lock.json" -type f -delete || true
 
+      - name: "🧪 Debug: Checkout info"
+        run: |
+          echo "🔍 Branch: $GITHUB_REF_NAME"
+          echo "📦 Event: $GITHUB_EVENT_NAME"
+          echo "🔖 Action: $GITHUB_EVENT_ACTION"
+          echo "🧩 Workspace: $GITHUB_WORKSPACE"
+
+      - name: "🧪 Debug: Is .git present?"
+        run: |
+          if [ -d ".git" ]; then
+            echo "✅ .git directory exists"
+            git status --porcelain || echo "Git status not available"
+          else
+            echo "❌ .git directory missing!"
+            exit 1
+          fi
+
+      - name: "🧪 Debug: Fetch all tags"
+        run: |
+          git fetch --prune --tags
+          echo "📦 Available tags (latest 10):"
+          git tag --list --sort=-version:refname | head -10
+
+      - name: "🧪 Debug: Check if v1.2.0 exists"
+        run: |
+          if git tag --list | grep -q "v1.2.0"; then
+            echo "✅ Tag v1.2.0 found"
+          else
+            echo "❌ Tag v1.2.0 NOT found"
+            exit 1
+          fi
+
+      - name: "🧪 Debug: Show MinVer-determined version"
+        run: |
+          # Проверяем свойства через MSBuild
+          echo "🔍 Reading MinVer version..."
+          MINVER=$(dotnet msbuild -nologo -getProperty:MinVerVersion /p:DesignTimeBuild=true)
+          PKGVER=$(dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true)
+          VERSION=$(dotnet msbuild -nologo -getProperty:Version /p:DesignTimeBuild=true)
+
+          echo "🔖 MinVerVersion: $MINVER"
+          echo "📦 PackageVersion: $PKGVER"
+          echo "🔖 Version: $VERSION"
+
+          if [ -z "$MINVER" ] || [ "$MINVER" = "1.0.0" ]; then
+            echo "❌ MinVer failed to detect correct version"
+            exit 1
+          fi
+
+      - name: "🧪 Debug: Full build to trigger MinVer"
+        run: |
+          echo "🔨 Building project to force MinVer evaluation..."
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords \
+            /bl:build.binlog  # Сохраняет лог для анализа
+
+
       - name: Restore dependencies
         run: dotnet restore --force-evaluate
 
