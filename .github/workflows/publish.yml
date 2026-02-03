@@ -72,6 +72,11 @@ jobs:
 
       - name: Publish to NuGet.org
         run: |
+          if [ -z "${{ secrets.NUGET_API_KEY }}" ]; then
+            echo "::error::NUGET_API_KEY secret is not set. Configure it in repository secrets to allow publishing to NuGet.org"
+            exit 1
+          fi
+
           dotnet nuget push "./artifacts/*.nupkg" \
             --source https://api.nuget.org/v3/index.json \
             --api-key ${{ secrets.NUGET_API_KEY }} \
