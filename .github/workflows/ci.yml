@@ -1,10 +1,11 @@
+---
 name: CI
 
 on:
   pull_request:
-    branches: [ main, staging ]
+    branches: [main, staging]
   push:
-    branches: [ main, staging ]
+    branches: [main, staging]
 
 jobs:
   # ===================================================================
@@ -113,7 +114,7 @@ jobs:
           name: fsharplint-report
           path: TestResults/fsharplint.msbuild
 
-      - name: � Convert fsharplint report to SARIF and upload to Code Scanning
+      - name: 🔄 Convert fsharplint report to SARIF and upload to Code Scanning
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -187,9 +188,12 @@ jobs:
           retention-days: 5
 
       - name: 📊 Upload coverage to Codecov (optional)
-        if: always() && github.event_name == 'pull_request' && secrets.CODECOV_TOKEN != ''
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: github.event_name == 'pull_request' && env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ env.CODECOV_TOKEN }}
           files: TestResults/coverage.cobertura.xml
           flags: unittests
           fail_ci_if_error: true
@@ -248,7 +252,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🏷️ Apply automatic labels (labeler)
-        uses: actions/labeler@v4
+        uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 

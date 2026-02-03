@@ -2,7 +2,7 @@ name: Check Label Generator
 
 on:
   push:
-    branches: [ main, staging ]
+    branches: [main, staging]
     paths:
       - '.github/config/labels.json'
       - '.github/scripts/generate-contributing.fsx'
