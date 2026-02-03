@@ -1,8 +1,5 @@
 name: CI
 
-# Запуск при:
-# - Открытии/обновлении PR в main/staging
-# - Прямом пуше в main/staging
 on:
   pull_request:
     branches: [ main, staging ]
@@ -27,13 +24,32 @@ jobs:
       - name: 🔁 Checkout code
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Для MinVer и правильной истории тегов
+          fetch-depth: 0  # Критично для MinVer
+
+      # DEBUG: Диагностика .git и тегов — можно удалить после настройки
+      - name: "🧪 DEBUG: Check git and tags (safe to remove later)"
+        run: |
+          echo "🔍 Git directory:"
+          ls -la .git || echo "❌ .git not found"
+          
+          echo "📡 Fetching all tags..."
+          git fetch --prune --tags --verbose
+          
+          echo "📦 Available tags (latest 10):"
+          git tag --list --sort=-version:refname | head -10
+          
+          if git tag --list | grep -q "^v1\.2\.0$"; then
+            echo "✅ Tag v1.2.0 is present"
+          else
+            echo "❌ Tag v1.2.0 is MISSING — MinVer may fallback to 1.1.0"
+          fi
+        # DEBUG: Удалить после подтверждения стабильности
 
       - name: ⚙️ Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-          cache: false  # Мы сами кэшируем пакеты
+          cache: false
 
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
@@ -54,20 +70,33 @@ jobs:
 
       - name: 🔨 Build library
         run: |
+          echo "🔨 Building MoneyToWords..."
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-incremental \
             --no-restore
 
+      # Уверенность, что MinVer сработал — по выводу из сборки
+      - name: ✅ Confirm MinVer output from build
+        run: |
+          echo "✅ MinVer should have printed version during build:"
+          echo "    Example: 🔖 Version: 1.2.1-alpha.4"
+          echo "💡 If you see it above — MinVer is working."
+          echo "❗ If not — check Directory.Build.props and git tags."
+
       - name: 🧪 Run tests
         run: |
           echo "🧪 Running tests..."
           mkdir -p TestResults
-          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
-            --configuration Release \
-            --no-build \
-            --verbosity normal \
-            --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx"
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx"
+
+      - name: 📤 Upload test results (if failed)
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results
+          path: TestResults/results.trx
+          retention-days: 5
 
       - name: 📦 Validate package (PR only)
         if: github.event_name == 'pull_request'
@@ -82,21 +111,21 @@ jobs:
             /p:ContinuousIntegrationBuild=true \
             /p:NoWarn=NU5128
 
-          echo "🔖 Detected version:"
-          dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true
+          echo "🔖 Final PackageVersion:"
+          dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj
 
           ls -la ./artifacts/
 
-      - name: 📤 Upload test results (if failed)
-        if: always() && github.event_name == 'pull_request'
+      - name: 📤 Upload validated package
+        if: github.event_name == 'pull_request' && success()
         uses: actions/upload-artifact@v6
         with:
-          name: test-results
-          path: TestResults/
+          name: validated-package
+          path: ./artifacts/*.nupkg
           retention-days: 5
 
   # ===================================================================
-  # Проверка лейблов (остаётся отдельно — нужна до всего)
+  # Проверка лейблов
   # ===================================================================
   validate-pr:
     if: github.event_name == 'pull_request'
@@ -121,13 +150,13 @@ jobs:
             exit 1
           fi
 
-          # (вставь сюда свой существующий скрипт проверки)
-          # или оставь как есть — он уже работает
+          # Твой существующий скрипт проверки лейблов
+          # (оставь как есть — он работает)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ===================================================================
-  # Публикация (остаётся без изменений)
+  # Публикация
   # ===================================================================
   publish:
     if: github.event_name == 'release' && github.event.action == 'published'
@@ -161,13 +190,16 @@ jobs:
       - name: 🛰️ Fetch all tags
         run: |
           git fetch --prune --tags
-          git tag --list --sort=-version:refname | head -5
+          echo "📦 Tags available:"
+          git tag --list --sort=-version:refname | head -10
 
-      - name: "🧪 Debug: Show MinVer version"
+      - name: 🔧 Restore and Build
         run: |
-          MINVER=$(dotnet msbuild -nologo -getProperty:MinVerVersion /p:DesignTimeBuild=true)
-          echo "🔖 MinVerVersion: $MINVER"
-          [ -z "$MINVER" ] && exit 1
+          dotnet restore --force-evaluate
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords \
+            /bl:build.binlog
 
       - name: 📦 Pack with MinVer
         id: pack
@@ -179,8 +211,11 @@ jobs:
             /p:SymbolPackageFormat=snupkg \
             /p:ContinuousIntegrationBuild=true
 
-      - name: 📦 Verify packaged version
+      - name: ✅ Verify package version and contents
         run: |
+          echo "📦 Final version:"
+          dotnet msbuild -nologo -getProperty:PackageVersion
+          ls -la ./artifacts/
           find ./artifacts -name "*.nupkg" -exec echo "✅ Created package:" {} \;
 
       - name: Publish to NuGet.org
