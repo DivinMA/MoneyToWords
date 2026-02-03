@@ -76,6 +76,12 @@ jobs:
             --no-incremental \
             --no-restore
 
+      - name: 🎨 Check code format
+        run: |
+          echo "🔍 Verifying code formatting (dotnet format)"
+          dotnet tool restore || true
+          dotnet format --verify-no-changes
+
       # Уверенность, что MinVer сработал — по выводу из сборки
       - name: ✅ Confirm MinVer output from build
         run: |
@@ -84,11 +90,11 @@ jobs:
           echo "💡 If you see it above — MinVer is working."
           echo "❗ If not — check Directory.Build.props and git tags."
 
-      - name: 🧪 Run tests
+      - name: 🧪 Run tests & collect coverage
         run: |
           echo "🧪 Running tests..."
           mkdir -p TestResults
-          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx"
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=${{ github.workspace }}/TestResults/coverage.cobertura.xml
 
       - name: 📤 Upload test results (if failed)
         if: always() && github.event_name == 'pull_request'
@@ -97,6 +103,15 @@ jobs:
           name: test-results
           path: TestResults/results.trx
           retention-days: 5
+
+      - name: 📊 Upload coverage to Codecov (optional)
+        if: always() && github.event_name == 'pull_request'
+        uses: codecov/codecov-action@v4
+        with:
+          files: TestResults/coverage.cobertura.xml
+          flags: unittests
+          fail_ci_if_error: false
+          verbose: true
 
       - name: 📦 Validate package (PR only)
         if: github.event_name == 'pull_request'

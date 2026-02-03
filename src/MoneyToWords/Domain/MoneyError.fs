@@ -62,9 +62,9 @@ type MoneyError =
     /// A brief explanation of the error, e.g.:
     /// <list type="bullet">
     ///   <item>"Amount cannot be negative"</item>
-    ///   <item>"Kopecks must be in range 0 to 99"</item>
-    ///   <item>"Rubles value is too large"</item>
-    ///   <item>"Money composition error: Invalid rubles and kopecks"</item>
+    ///   <item>"Kopecks must be in range 0 to 99 (actual: &lt;value&gt;)"</item>
+    ///   <item>"Rubles value is too large (actual: &lt;value&gt;)"</item>
+    ///   <item>"Money composition error" or "Money composition error: &lt;details&gt;"</item>
     /// </list>
     /// </returns>
     /// <remarks>
@@ -74,6 +74,8 @@ type MoneyError =
     member this.Description =
         match this with
         | NegativeRubles -> "Amount cannot be negative"
-        | InvalidKopecks _ -> "Kopecks must be in range 0 to 99"
-        | RublesTooLarge _ -> "Rubles value is too large"
-        | CompositionError reason -> "Money composition error: " + reason
+        | InvalidKopecks actual -> sprintf "Kopecks must be in range 0 to 99 (actual: %d)" actual
+        | RublesTooLarge actual -> sprintf "Rubles value is too large (actual: %d)" actual
+        | CompositionError reason ->
+            if System.String.IsNullOrWhiteSpace(reason) then "Money composition error"
+            else sprintf "Money composition error: %s" reason
