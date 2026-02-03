@@ -105,7 +105,32 @@ jobs:
           name: fsharplint-report
           path: TestResults/fsharplint.msbuild
 
-      - name: 🔐 Check for vulnerable packages
+      - name: � Convert fsharplint report to SARIF and upload to Code Scanning
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔧 Attempting to convert fsharplint msbuild report to SARIF"
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          # Install Sarif.Multitool if possible
+          dotnet tool install --global Sarif.Multitool || dotnet tool update --global Sarif.Multitool || true
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          SARIF_OUT=TestResults/fsharplint.sarif
+          # Try two possible conversion command styles
+          sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT || sarif convert TestResults/fsharplint.msbuild $SARIF_OUT || sarif transform TestResults/fsharplint.msbuild $SARIF_OUT || true
+
+          if [ -f "$SARIF_OUT" ]; then
+            echo "✅ SARIF created: $SARIF_OUT"
+            echo "📤 Uploading SARIF to GitHub Code Scanning API"
+            # Prepare JSON payload with sarif content
+            SARIF_CONTENT=$(python -c "import json,sys; print(json.dumps(open('"$SARIF_OUT"','r').read()))")
+            DATA=$(printf '{"commit_sha":"%s","ref":"%s","sarif": %s}' "${{ github.sha }}" "${{ github.ref }}" "$SARIF_CONTENT")
+            curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$DATA" "https://api.github.com/repos/${{ github.repository }}/code-scanning/sarifs" || true
+          else
+            echo "⚠️ SARIF file not generated; skipping upload"
+          fi
+
+      - name: �🔐 Check for vulnerable packages
         run: |
           echo "🔍 Checking for vulnerable packages"
           dotnet list package --vulnerable > vulnerabilities.txt || true
@@ -139,7 +164,8 @@ jobs:
         with:
           files: TestResults/coverage.cobertura.xml
           flags: unittests
-          fail_ci_if_error: false
+          fail_ci_if_error: true
+          comment: true
           verbose: true
 
       - name: 📦 Validate package (PR only)
