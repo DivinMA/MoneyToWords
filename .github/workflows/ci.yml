@@ -124,8 +124,15 @@ jobs:
           dotnet tool install --global Sarif.Multitool || dotnet tool update --global Sarif.Multitool || true
           export PATH="$HOME/.dotnet/tools:$PATH"
           SARIF_OUT=TestResults/fsharplint.sarif
-          # Try two possible conversion command styles
-          sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT || sarif convert TestResults/fsharplint.msbuild $SARIF_OUT || sarif transform TestResults/fsharplint.msbuild $SARIF_OUT || true
+
+          # Prefer 'convert' if available, otherwise try 'transform'; quiet errors to reduce log noise
+          if sarif --help 2>/dev/null | grep -q "convert"; then
+            sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT 2>/dev/null || sarif convert TestResults/fsharplint.msbuild $SARIF_OUT 2>/dev/null || true
+          elif sarif --help 2>/dev/null | grep -q "transform"; then
+            sarif transform TestResults/fsharplint.msbuild $SARIF_OUT 2>/dev/null || true
+          else
+            echo "⚠️ 'sarif' tool doesn't support convert/transform; skipping SARIF conversion"
+          fi
 
           if [ -f "$SARIF_OUT" ]; then
             echo "✅ SARIF created: $SARIF_OUT"
@@ -186,7 +193,6 @@ jobs:
           files: TestResults/coverage.cobertura.xml
           flags: unittests
           fail_ci_if_error: true
-          comment: true
           verbose: true
 
       - name: 📦 Validate package (PR only)
