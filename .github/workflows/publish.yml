@@ -10,6 +10,7 @@ jobs:
     # Гарантируем: только из main
     if: github.event.release.target_commitish == 'main'
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
       id-token: write  # Для сборки с идентификацией
@@ -69,6 +70,39 @@ jobs:
           dotnet msbuild -nologo -getProperty:PackageVersion
           ls -la ./artifacts/
           find ./artifacts -name "*.nupkg" -exec echo "✅ Created package:" {} \;
+
+      - name: 🔧 Validate package contents
+        run: |
+          echo "🔍 Validating .nupkg contents"
+          set -e
+          NUPKG=$(ls ./artifacts/*.nupkg | head -n1)
+          if [ -z "$NUPKG" ]; then
+            echo "::error::No nupkg found in ./artifacts"
+            exit 1
+          fi
+          echo "Found: $NUPKG"
+          echo "Contents:" && unzip -l "$NUPKG"
+
+          # Ensure library DLL is present
+          if ! unzip -l "$NUPKG" | grep -q "lib/net10.0/MoneyToWords.dll"; then
+            echo "::error::Library DLL not found inside nupkg"
+            exit 1
+          fi
+
+          # Ensure README and LICENSE bundled
+          if ! unzip -l "$NUPKG" | grep -q "README.md"; then
+            echo "::error::README.md not included in package"
+            exit 1
+          fi
+
+          if ! unzip -l "$NUPKG" | grep -q "LICENSE.txt"; then
+            echo "::error::LICENSE.txt not included in package"
+            exit 1
+          fi
+
+          # Create checksums
+          sha512sum ./artifacts/*.nupkg > ./artifacts/checksums.sha512
+          ls -la ./artifacts/checksums.sha512
 
       - name: Publish to NuGet.org
         run: |

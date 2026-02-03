@@ -1,8 +1,10 @@
 name: "Auto Release on main"
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Release Drafter"]
+    types:
+      - completed
 
 permissions:
   contents: write
