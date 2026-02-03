@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     
     <PropertyGroup>
         <!-- Только здесь! -->
@@ -23,6 +23,10 @@
         <!-- Presentation -->
         <Compile Include="Presentation\MoneyErrors.fs" />
         <Compile Include="Presentation\MoneyToWords.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
     </ItemGroup>
 
 </Project>
