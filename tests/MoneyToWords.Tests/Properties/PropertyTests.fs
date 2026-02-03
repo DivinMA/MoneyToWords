@@ -181,9 +181,9 @@ module PropertyTests =
     /// === Инвариант: минимальное значение (0.00) → корректная строка ===
 
     [<Property>]
-    let ``Min value 0.00 returns:  ноль рублей и ноль копеек`` =
+    let ``Min value 0.00 returns:  ноль рублей`` =
         match toWordsResult 0L 0 with
-        | Ok result -> result = "ноль рублей и ноль копеек"
+        | Ok result -> result = "ноль рублей"
         | Error _ -> false
 
     /// === Инвариант: любые валидные входы → не пусто и не null ===

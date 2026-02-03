@@ -1,10 +1,11 @@
+---
 name: CI
 
 on:
   pull_request:
-    branches: [ main, staging ]
+    branches: [main, staging]
   push:
-    branches: [ main, staging ]
+    branches: [main, staging]
 
 jobs:
   # ===================================================================
@@ -87,6 +88,14 @@ jobs:
           fi
           dotnet format --verify-no-changes
 
+      - name: 🔎 Check README install command
+        run: |
+          echo "🔍 Ensuring README contains correct install command"
+          if ! grep -q "dotnet add package MoneyToWordsFSharpLib" README.md; then
+            echo "❌ README.md must contain 'dotnet add package MoneyToWordsFSharpLib'"
+            exit 1
+          fi
+
       - name: 🔎 F# Lint (FSharpLint)
         run: |
           echo "🔍 Installing and running F# lint (dotnet-fsharplint)"
@@ -105,7 +114,7 @@ jobs:
           name: fsharplint-report
           path: TestResults/fsharplint.msbuild
 
-      - name: � Convert fsharplint report to SARIF and upload to Code Scanning
+      - name: 🔄 Convert fsharplint report to SARIF and upload to Code Scanning
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,8 +125,15 @@ jobs:
           dotnet tool install --global Sarif.Multitool || dotnet tool update --global Sarif.Multitool || true
           export PATH="$HOME/.dotnet/tools:$PATH"
           SARIF_OUT=TestResults/fsharplint.sarif
-          # Try two possible conversion command styles
-          sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT || sarif convert TestResults/fsharplint.msbuild $SARIF_OUT || sarif transform TestResults/fsharplint.msbuild $SARIF_OUT || true
+
+          # Prefer 'convert' if available, otherwise try 'transform'; quiet errors to reduce log noise
+          if sarif --help 2>/dev/null | grep -q "convert"; then
+            sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT 2>/dev/null || sarif convert TestResults/fsharplint.msbuild $SARIF_OUT 2>/dev/null || true
+          elif sarif --help 2>/dev/null | grep -q "transform"; then
+            sarif transform TestResults/fsharplint.msbuild $SARIF_OUT 2>/dev/null || true
+          else
+            echo "⚠️ 'sarif' tool doesn't support convert/transform; skipping SARIF conversion"
+          fi
 
           if [ -f "$SARIF_OUT" ]; then
             echo "✅ SARIF created: $SARIF_OUT"
@@ -134,7 +150,14 @@ jobs:
         run: |
           echo "🔍 Checking for vulnerable packages"
           dotnet list package --vulnerable > vulnerabilities.txt || true
-          if [ -s vulnerabilities.txt ]; then echo "❌ Vulnerable packages found:" && cat vulnerabilities.txt && exit 1; fi
+          # dotnet list writes project information even when no vulnerabilities; detect real vulnerabilities.
+          if grep -q "No vulnerable packages were found" vulnerabilities.txt; then
+            echo "✅ No vulnerable packages found"
+          elif [ -s vulnerabilities.txt ]; then
+            echo "❌ Vulnerable packages found:" && cat vulnerabilities.txt && exit 1
+          else
+            echo "⚠️ Couldn\'t determine vulnerable packages; skipping check"
+          fi
 
       # Уверенность, что MinVer сработал — по выводу из сборки
       - name: ✅ Confirm MinVer output from build
@@ -143,6 +166,12 @@ jobs:
           echo "    Example: 🔖 Version: 1.2.1-alpha.4"
           echo "💡 If you see it above — MinVer is working."
           echo "❗ If not — check Directory.Build.props and git tags."
+
+      - name: 🧪 Run TextOutput tests (isolated)
+        run: |
+          echo "🧪 Running TextOutput unit tests (isolated)"
+          mkdir -p TestResults
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --filter "FullyQualifiedName~TextOutput" --logger "trx;LogFileName=${{ github.workspace }}/TestResults/textoutput.trx"
 
       - name: 🧪 Run tests & collect coverage
         run: |
@@ -159,13 +188,15 @@ jobs:
           retention-days: 5
 
       - name: 📊 Upload coverage to Codecov (optional)
-        if: always() && github.event_name == 'pull_request'
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: github.event_name == 'pull_request' && env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ env.CODECOV_TOKEN }}
           files: TestResults/coverage.cobertura.xml
           flags: unittests
           fail_ci_if_error: true
-          comment: true
           verbose: true
 
       - name: 📦 Validate package (PR only)
@@ -221,7 +252,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🏷️ Apply automatic labels (labeler)
-        uses: actions/labeler@v4
+        uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 

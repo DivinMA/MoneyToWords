@@ -39,11 +39,16 @@
 ## 🚀 Примеры использования
 
 ```fsharp
-	toWords 1L 0L // → "один рубль и ноль копеек"
-	toWords 3L 50L // → "три рубля и пятьдесят копеек"
-	toWords 21_000L 0L // → "двадцать одна тысяча рублей и ноль копеек"	
-	toWords 112_234L 75L // → "сто двенадцать тысяч двести тридцать четыре рубля и семьдесят пять копеек"
-	toWords 0L 1L // → "ноль рублей и одна копейка"
+open MoneyToWords
+open MoneyToWords.Presentation
+
+match Money.TryCreate(1L, 0) with
+| Ok money -> printfn "%s" (MoneyToWords.toWords money)
+| Error err -> printfn "Ошибка: %s" err.Description
+
+match Money.TryCreate(112_234L, 75) with
+| Ok money -> printfn "%s" (MoneyToWords.toWords money) // → "сто двенадцать тысяч двести тридцать четыре рубля и семьдесят пять копеек"
+| Error _ -> ()
 ```
 
 ---
@@ -97,7 +102,7 @@
 
 ## 🛠 Установка
 ```bash
-	dotnet add package MoneyToWords
+	dotnet add package MoneyToWordsFSharpLib
 ```
 
 ---

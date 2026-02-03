@@ -16,6 +16,7 @@
         <Compile Include="Domain\MoneyValidationTests.fs" />
         <Compile Include="Application\DeclensionTests.fs" />
         <Compile Include="Infrastructure\RussianRulesTests.fs" />
+        <Compile Include="Infrastructure\TextOutputTests.fs" />
         <Compile Include="Integration\MoneyToWordsTests.fs" />
         <Compile Include="Integration\LargeNumbersTests.fs" />
         <Compile Include="Properties\PropertyTests.fs" />
