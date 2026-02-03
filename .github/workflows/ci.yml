@@ -87,6 +87,14 @@ jobs:
           fi
           dotnet format --verify-no-changes
 
+      - name: 🔎 Check README install command
+        run: |
+          echo "🔍 Ensuring README contains correct install command"
+          if ! grep -q "dotnet add package MoneyToWordsFSharpLib" README.md; then
+            echo "❌ README.md must contain 'dotnet add package MoneyToWordsFSharpLib'"
+            exit 1
+          fi
+
       - name: 🔎 F# Lint (FSharpLint)
         run: |
           echo "🔍 Installing and running F# lint (dotnet-fsharplint)"

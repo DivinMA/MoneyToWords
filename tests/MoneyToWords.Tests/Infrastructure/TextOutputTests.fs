@@ -23,6 +23,6 @@ module TextOutputTests =
         |> should equal "сто рублей и двадцать три копейки"
 
     [<Fact>]
-    let ``withConjunction includes kopecks even when second part starts with ноль`` () =
+    let ``withConjunction omits second part when it starts with ноль`` () =
         TextOutput.withConjunction " и " "сто рублей" "ноль копеек"
-        |> should equal "сто рублей и ноль копеек"
+        |> should equal "сто рублей"

@@ -109,6 +109,7 @@ module TextOutput =
     /// </code>
     /// </example>
     let withConjunction (conj: string) (a: string) (b: string) : string =
-        // if b.StartsWith "ноль" then a
-        // else 
-        a + conj + b
+        // If the second part starts with "ноль" (e.g., "ноль копеек"), omit it and return only the first part.
+        // This keeps presentation rules (like omitting zero subunits) at a single place and avoids redundant phrases.
+        if b.StartsWith "ноль" then a
+        else a + conj + b
