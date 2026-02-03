@@ -65,7 +65,7 @@ jobs:
           mkdir -p TestResults
           dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
             --configuration Release \
-            --no-build \
+            #--no-build \
             --verbosity normal \
             --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx"
 
