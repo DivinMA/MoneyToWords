@@ -78,6 +78,31 @@ jobs:
             --no-incremental \
             --no-restore
 
+      - name: "📊 DEBUG: Force MinVer via build and read version"
+        run: |
+          echo "🔧 Building project to trigger MinVer..."
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-incremental \
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true \
+            /bl:build-minver-debug.binlog
+
+          echo "🔍 Reading version after build..."
+          MINVER=$(dotnet msbuild -nologo -getProperty:MinVerVersion)
+          PKGVER=$(dotnet msbuild -nologo -getProperty:PackageVersion)
+          VERSION=$(dotnet msbuild -nologo -getProperty:Version)
+
+          echo "🔖 MinVerVersion: $MINVER"
+          echo "📦 PackageVersion: $PKGVER"
+          echo "🔖 Version: $VERSION"
+
+          if [ -z "$MINVER" ] || [ "$MINVER" = "1.0.0" ]; then
+            echo "❌ MinVer failed to detect correct version"
+            exit 1
+          fi
+
+
       # DEBUG: Проверка версии после сборки
       - name: "📊 DEBUG: Show MinVer-determined version"
         run: |
