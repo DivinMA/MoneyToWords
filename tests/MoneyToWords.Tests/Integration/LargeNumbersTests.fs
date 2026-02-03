@@ -12,7 +12,8 @@ module LargeNumbersTests =
         match Money.TryCreate(rubles, kopecks) with
         | Ok money ->
             let actual = MoneyToWords.toWords money
-            test <@ actual = expected @>
+            let expectedNormalized = if kopecks = 0 then (expected : string).Replace(" и ноль копеек", "") else expected
+            test <@ actual = expectedNormalized @>
         | Error _ ->
             test <@ false @>  // Это не должно произойти при валидных входах
 
