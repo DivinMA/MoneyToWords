@@ -87,7 +87,18 @@ jobs:
           echo "🔍 Installing and running F# lint (dotnet-fsharplint)"
           dotnet tool install --global dotnet-fsharplint || dotnet tool update --global dotnet-fsharplint
           export PATH="$HOME/.dotnet/tools:$PATH"
+          mkdir -p TestResults
+          # Produce msbuild-style output and save as artifact
+          dotnet-fsharplint --format msbuild lint --file-type project src/MoneyToWords/MoneyToWords.fsproj > TestResults/fsharplint.msbuild || true
+          # Also run standard lint to fail on issues
           dotnet-fsharplint lint --file-type project src/MoneyToWords/MoneyToWords.fsproj
+
+      - name: 📄 Upload fsharplint report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fsharplint-report
+          path: TestResults/fsharplint.msbuild
 
       - name: 🔐 Check for vulnerable packages
         run: |
@@ -107,7 +118,7 @@ jobs:
         run: |
           echo "🧪 Running tests..."
           mkdir -p TestResults
-          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=${{ github.workspace }}/TestResults/coverage.cobertura.xml /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=${{ github.workspace }}/TestResults/coverage.cobertura.xml /p:Threshold=85 /p:ThresholdType=line /p:ThresholdStat=total
 
       - name: 📤 Upload test results (if failed)
         if: always() && github.event_name == 'pull_request'
