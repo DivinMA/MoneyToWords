@@ -79,7 +79,12 @@ jobs:
       - name: 🎨 Check code format
         run: |
           echo "🔍 Verifying code formatting (dotnet format)"
-          dotnet tool restore || true
+          # Ensure dotnet-format is available
+          if ! command -v dotnet-format >/dev/null 2>&1; then
+            echo "⚠️ dotnet-format not found, attempting to install..."
+            dotnet tool install --global dotnet-format || dotnet tool update --global dotnet-format
+            export PATH="$HOME/.dotnet/tools:$PATH"
+          fi
           dotnet format --verify-no-changes
 
       - name: 🔎 F# Lint (FSharpLint)
@@ -89,7 +94,7 @@ jobs:
           export PATH="$HOME/.dotnet/tools:$PATH"
           mkdir -p TestResults
           # Produce msbuild-style output and save as artifact
-          dotnet-fsharplint --format msbuild lint --file-type project src/MoneyToWords/MoneyToWords.fsproj > TestResults/fsharplint.msbuild || true
+          dotnet-fsharplint lint --format msbuild --file-type project src/MoneyToWords/MoneyToWords.fsproj > TestResults/fsharplint.msbuild || true
           # Also run standard lint to fail on issues
           dotnet-fsharplint lint --file-type project src/MoneyToWords/MoneyToWords.fsproj
 
