@@ -110,7 +110,19 @@
 dotnet list package | grep MoneyToWordsFSharpLib
 ```
 
-🔄 Автоматизация
+� Создание Personal Access Token (PAT)
+
+Иногда создание Fine‑grained PAT доступно не напрямую через UI или ссылка `https://github.com/settings/tokens` может возвращать 404 (ограничение организации или GitHub Enterprise). Рекомендуемая последовательность:
+
+- Перейдите: `Settings → Developer settings → Personal access tokens` или откройте напрямую `https://github.com/settings/tokens/new`.
+- Если страница возвращает 404: попробуйте открыть в режиме инкогнито / другом браузере, проверьте, что вы в нужном аккаунте, либо свяжитесь с администратором организации/Enterprise (возможно, создание PAT ограничено).
+- Выберите **Fine‑grained** (если доступно) или **Classic** и задайте минимальные права и срок действия.
+- Скопируйте токен сразу и добавьте его в секреты репозитория: `Settings → Secrets and variables → Actions → New repository secret`.
+- Через CLI: `gh secret set GH_TOKEN -b"$TOKEN" -R DivinMA/MoneyToWords`.
+
+Если возникнут вопросы — могу добавить подробную инструкцию или примеры в `CONTRIBUTING.md`.
+
+�🔄 Автоматизация
 Лейблы ставятся автоматически по ветке и файлам.
 Не нужно вручную ставить feature, area:core и т.д.
 CI проверяет, что есть patch/minor/major.

@@ -87,21 +87,17 @@ module TextOutput =
             String(buffer, 0, pos)
 
     /// <summary>
-    /// Joins two text parts with a conjunction, unless the second part starts with "ноль".
+    /// Joins two text parts with a conjunction.
     /// </summary>
     /// <param name="conj">Conjunction to insert (e.g., " и ").</param>
     /// <param name="a">First part (e.g., rubles).</param>
     /// <param name="b">Second part (e.g., kopecks).</param>
     /// <returns>
-    /// <list type="bullet">
-    ///   <item>If <paramref name="b" /> starts with "ноль", returns <paramref name="a" />.</item>
-    ///   <item>Otherwise, returns <c>a + conj + b</c>.</item>
-    /// </list>
+    /// Returns <c>a + conj + b</c> (the function always includes the second part).
     /// </returns>
     /// <remarks>
-    /// This function ensures that " и ноль копеек" is not included in the output.
-    /// Currently commented out — logic is handled in <see cref="MoneyToWords.toWords" />.
-    /// May be reactivated if needed in future versions.
+    /// Note: logic to omit parts starting with "ноль" is intentionally left out to keep formatting responsibilities at the presentation layer.
+    /// If desired, uncomment the conditional check in implementation or pre-process the arguments before calling this function.
     /// </remarks>
     /// <example>
     /// <code>
