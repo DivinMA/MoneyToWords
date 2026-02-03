@@ -159,6 +159,12 @@ jobs:
           echo "💡 If you see it above — MinVer is working."
           echo "❗ If not — check Directory.Build.props and git tags."
 
+      - name: 🧪 Run TextOutput tests (isolated)
+        run: |
+          echo "🧪 Running TextOutput unit tests (isolated)"
+          mkdir -p TestResults
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --filter "FullyQualifiedName~TextOutput" --logger "trx;LogFileName=${{ github.workspace }}/TestResults/textoutput.trx"
+
       - name: 🧪 Run tests & collect coverage
         run: |
           echo "🧪 Running tests..."
