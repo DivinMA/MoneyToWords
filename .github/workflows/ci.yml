@@ -112,7 +112,7 @@ jobs:
             /p:NoWarn=NU5128
 
           echo "🔖 Final PackageVersion:"
-          dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true
+          dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj
 
           ls -la ./artifacts/
 
