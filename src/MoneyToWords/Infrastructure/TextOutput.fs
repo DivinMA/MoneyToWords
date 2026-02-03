@@ -31,7 +31,7 @@ module TextOutput =
     /// Currently set to 2048, which is sufficient for numbers up to 10^18.
     /// Increase if supporting longer forms or additional languages.
     /// </remarks>
-    let private MaxSize = 2048
+    let private maxSize = 2048
 
     /// <summary>
     /// Copies a string into a span at the given position.
@@ -80,7 +80,7 @@ module TextOutput =
     let joinWords (words: string list) : string =
         if List.isEmpty words then "ноль"
         else
-            let buffer = Array.zeroCreate<char> MaxSize
+            let buffer = Array.zeroCreate<char> maxSize
             let mutable pos = 0
             for word in words do
                 pos <- appendWithSpace (Span buffer) pos word

@@ -82,6 +82,19 @@ jobs:
           dotnet tool restore || true
           dotnet format --verify-no-changes
 
+      - name: 🔎 F# Lint (FSharpLint)
+        run: |
+          echo "🔍 Installing and running F# lint (dotnet-fsharplint)"
+          dotnet tool install --global dotnet-fsharplint || dotnet tool update --global dotnet-fsharplint
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          dotnet-fsharplint lint --file-type project src/MoneyToWords/MoneyToWords.fsproj
+
+      - name: 🔐 Check for vulnerable packages
+        run: |
+          echo "🔍 Checking for vulnerable packages"
+          dotnet list package --vulnerable > vulnerabilities.txt || true
+          if [ -s vulnerabilities.txt ]; then echo "❌ Vulnerable packages found:" && cat vulnerabilities.txt && exit 1; fi
+
       # Уверенность, что MinVer сработал — по выводу из сборки
       - name: ✅ Confirm MinVer output from build
         run: |
