@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0  # Критично для MinVer
 
       # DEBUG: Диагностика .git и тегов — можно удалить после настройки
-      - name: 🧪 DEBUG: Check git and tags (safe to remove later)
+      - name: "🧪 DEBUG: Check git and tags (safe to remove later)"
         run: |
           echo "🔍 Git directory:"
           ls -la .git || echo "❌ .git not found"
