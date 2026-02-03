@@ -94,7 +94,7 @@ jobs:
         run: |
           echo "🧪 Running tests..."
           mkdir -p TestResults
-          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=${{ github.workspace }}/TestResults/coverage.cobertura.xml
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=${{ github.workspace }}/TestResults/coverage.cobertura.xml /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
 
       - name: 📤 Upload test results (if failed)
         if: always() && github.event_name == 'pull_request'

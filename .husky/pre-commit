@@ -1,5 +1,12 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+if [ -f "$(dirname "$0")/_/husky.sh" ]; then
+  . "$(dirname "$0")/_/husky.sh"
+else
+  echo "⚠️ Husky helper not found at .husky/_/husky.sh"
+  echo "   Run: npm ci && npx husky install || npm run prepare"
+  echo "   Please install Husky to enable pre-commit checks."
+  exit 1
+fi
 
 echo "🔍 Pre-commit: проверка системы меток..."
 
