@@ -17,8 +17,8 @@ open MoneyToWords.Infrastructure
 ///   <item><see cref="TextOutput.joinWords" /> and <see cref="TextOutput.withConjunction" /> for efficient string building</item>
 /// </list>
 /// 
-/// The output always includes kopecks, even if zero (" и ноль копеек").
-/// For conditional kopecks (e.g., omit "ноль копеек"), compose with custom logic.
+/// By default the output omits zero subunits (e.g., "ноль копеек"). To force inclusion of zero parts, call
+/// <c>TextOutput.withConjunctionEx</c> with <c>includeZero = true</c> or compose a custom formatter.
 /// 
 /// This function is pure, total (for valid input), and designed for reuse in UI, CLI, or API layers.
 /// </remarks>
@@ -33,7 +33,7 @@ module MoneyToWords =
     /// A string representing the amount in words, e.g.:
     /// <list type="bullet">
     ///   <item>"один рубль и одна копейка"</item>
-    ///   <item>"двести рублей и ноль копеек"</item>
+    ///   <item>"двести рублей" (по умолчанию опускается "и ноль копеек")</item>
     ///   <item>"ноль рублей и пятнадцать копеек"</item>
     /// </list>
     /// </returns>
@@ -45,7 +45,7 @@ module MoneyToWords =
     /// 
     /// let zeroKopecks = Money.TryCreate(1L, 0).Value
     /// let text2 = MoneyToWords.toWords zeroKopecks
-    /// // → "один рубль и ноль копеек"
+    /// // → "один рубль" (ноль копеек опущено по умолчанию)
     /// </code>
     /// </example>
     /// <exception cref="System.ArgumentException">

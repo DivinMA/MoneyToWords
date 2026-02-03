@@ -26,3 +26,8 @@ module TextOutputTests =
     let ``withConjunction omits second part when it starts with ноль`` () =
         TextOutput.withConjunction " и " "сто рублей" "ноль копеек"
         |> should equal "сто рублей"
+
+    [<Fact>]
+    let ``withConjunctionEx includes zero when includeZero true`` () =
+        TextOutput.withConjunctionEx " и " "сто рублей" "ноль копеек" true
+        |> should equal "сто рублей и ноль копеек"
