@@ -1,0 +1,65 @@
+name: "Apply Repo Protections (manual)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'If true, only preview changes (no apply)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+  administration: write
+
+jobs:
+  apply-protections:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔐 Check token
+        run: |
+          if [ -z "${{ secrets.REPO_ADMIN_TOKEN }}" ]; then
+            echo "::error::Secret REPO_ADMIN_TOKEN is not configured. Please create a PAT with repo admin permissions and save it as REPO_ADMIN_TOKEN in repository secrets.";
+            exit 1;
+          fi
+
+      - name: ⚙️ Configure gh to use admin token
+        env:
+          REPO_ADMIN_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
+        run: |
+          echo "Configuring gh with admin token"
+          echo "$REPO_ADMIN_TOKEN" | gh auth login --with-token
+
+      - name: 🔧 Update repository merge settings (squash only)
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Setting repository merge policy: squash-only"
+          gh api repos/$REPO -X PATCH -f allow_squash_merge=true -f allow_merge_commit=false -f allow_rebase_merge=false
+
+      - name: 🔒 Apply branch protection for main
+        env:
+          REPO: ${{ github.repository }}
+          DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          echo "Applying branch protection to 'main'"
+          PAYLOAD='{"required_status_checks":{"strict":true,"contexts":["ci"]},"enforce_admins":false,"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":0},"restrictions":null,"requires_linear_history":true}'
+          if [ "$DRY" = "true" ]; then
+            echo "DRY RUN: Would call gh api repos/$REPO/branches/main/protection -X PUT -f '$PAYLOAD'"
+          else
+            gh api repos/$REPO/branches/main/protection -X PUT -f "$PAYLOAD"
+          fi
+
+      - name: 🏷️ Ensure 'release' environment exists
+        env:
+          REPO: ${{ github.repository }}
+          DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          if [ "$DRY" = "true" ]; then
+            echo "DRY RUN: Would create environment 'release'"
+          else
+            gh api repos/$REPO/environments/release -X PUT -f '{}' || true
+          fi
+
+      - name: ✅ Done
+        run: echo "Repository protections applied (or previewed)." 
