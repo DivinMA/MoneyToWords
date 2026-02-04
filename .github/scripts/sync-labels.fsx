@@ -107,13 +107,17 @@ let runCommand (cmd: string) : string * int =
     let output = StringBuilder()
     let error = StringBuilder()
 
+    // 🔐 Добавим lock
+    let outputLock = obj()
+    let errorLock = obj()
+
     proc.OutputDataReceived.Add(fun args ->
         if args.Data <> null then
-            output.AppendLine(args.Data) |> ignore)
+            lock outputLock (fun () -> output.AppendLine(args.Data) |> ignore))
 
     proc.ErrorDataReceived.Add(fun args ->
         if args.Data <> null then
-            error.AppendLine(args.Data) |> ignore)
+            lock errorLock (fun () -> error.AppendLine(args.Data) |> ignore))
 
     proc.Start() |> ignore
     proc.BeginOutputReadLine()
@@ -169,6 +173,8 @@ let ensureLoggedIn () =
             log "✅ Авторизация подтверждена"
     else
         log "🧪 Режим --dry-run: пропуск проверки авторизации"
+
+
 let wasLabelUsed (name: string) =
     if String.IsNullOrEmpty name then
         logError "⚠️ Попытка проверить использование пустой метки — возвращаем false"
