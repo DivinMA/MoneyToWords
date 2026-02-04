@@ -159,12 +159,15 @@ jobs:
           fi
 
       # Уверенность, что MinVer сработал — по выводу из сборки
-      - name: ✅ Confirm MinVer output from build
+      - name: 🏷️ Log resolved version (MinVer)
         run: |
-          echo "✅ MinVer should have printed version during build:"
-          echo "    Example: 🔖 Version: 1.2.1-alpha.4"
-          echo "💡 If you see it above — MinVer is working."
-          echo "❗ If not — check Directory.Build.props and git tags."
+          echo "🔍 Resolving version via MinVer..."
+          VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj)
+          echo "📦 Final PackageVersion: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "::error::Failed to resolve version via MinVer"
+            exit 1
+          fi
 
       - name: 🧪 Run TextOutput tests (isolated)
         run: |
