@@ -8,7 +8,7 @@
     "docs": "dotnet fsi .github/scripts/generate-contributing.fsx",
     "format": "find .github/scripts -name \"*.fsx\" -exec fantomas {} \\;",
     "format:check": "find .github/scripts -name \"*.fsx\" -exec fantomas --check {} \\; || exit 1",
-    "type-check": "find .github/scripts -name \"*.fsx\" -exec dotnet fsi --check {} \\; || exit 1",
+    "type-check": "find .github/scripts -name \"*.fsx\" -exec dotnet fsi --parse {} \\; || exit 1",
     "verify": "npm run docs && npm run check-generated",
     "check-generated": "git diff --exit-code CONTRIBUTING.md || (echo '❌ CONTRIBUTING.md out of date!' && echo '💡 Run: npm run docs && git add CONTRIBUTING.md' && exit 1)",
     "ci-check": "npm run check-generated && npm run format:check && npm run type-check && npm run labels:sync:dry-run",

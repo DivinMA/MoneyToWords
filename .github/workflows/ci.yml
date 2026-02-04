@@ -145,11 +145,10 @@ jobs:
             echo "⚠️ SARIF file not generated; skipping upload"
           fi
 
-      - name: �🔐 Check for vulnerable packages
+      - name: 🔐 Check for vulnerable packages
         run: |
           echo "🔍 Checking for vulnerable packages"
           dotnet list package --vulnerable > vulnerabilities.txt || true
-          # dotnet list writes project information even when no vulnerabilities; detect real vulnerabilities.
           if grep -q "No vulnerable packages were found" vulnerabilities.txt; then
             echo "✅ No vulnerable packages found"
           elif [ -s vulnerabilities.txt ]; then
