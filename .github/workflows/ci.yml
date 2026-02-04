@@ -263,12 +263,26 @@ jobs:
             echo "✅ Секрет GH_PAT найден"
           fi
 
+      # 🔍 ДОБАВЛЕННЫЙ ШАГ — НАЧАЛО
+      - name: "🔍 DEBUG: Test gh api with verbose output"
+        run: |
+          echo "🔍 Запускаем gh api напрямую с --verbose..."
+          echo "$GH_TOKEN" | gh auth login --with-token --hostname github.com
+          
+          # Теперь выполняем запрос с детальной диагностикой
+          gh api --verbose --paginate 'repos/DivinMA/MoneyToWords/labels' --jq '.[].name'
+
+          # Проверим статус
+          gh auth status
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+      # 🔍 ДОБАВЛЕННЫЙ ШАГ — КОНЕЦ
+
       - name: 🔄 Ensure labels exist (sync-labels)
         run: |
           echo "🔁 Running sync-labels to ensure labels are present..."
           export PR_NUMBER=${{ github.event.number }}
 
-          # 🔐 Аутентификация — используем НЕ GH_TOKEN и НЕ GITHUB_TOKEN
           if [ -z "$INPUT_GH_PAT" ]; then
             echo "❌ INPUT_GH_PAT is empty"
             exit 1
@@ -283,7 +297,6 @@ jobs:
 
           gh auth status
 
-          # Теперь запускаем скрипт — он будет использовать gh без токена в env
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
           INPUT_GH_PAT: ${{ secrets.GH_PAT }}
@@ -291,7 +304,7 @@ jobs:
       - name: 🏷️ Apply automatic labels (labeler)
         uses: actions/labeler@v6
         with:
-          repo-token: ${{ secrets.GH_PAT }}   # ← ПРАВИЛЬНО
+          repo-token: ${{ secrets.GH_PAT }}
           configuration-path: .github/labeler.yml
           sync-labels: false
           dot: true
