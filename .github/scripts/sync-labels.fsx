@@ -221,20 +221,20 @@ let getCurrentLabels () : Label list =
         []
     else
         try
-        let jarray = JsonConvert.DeserializeObject<JArray>(output.Trim())
+            let jarray = JsonConvert.DeserializeObject<JArray>(output.Trim())
 
-        jarray
-        |> Seq.cast<JObject>
-        |> Seq.map (fun o ->
-            {
-                Name = o.Value<string>("name")
-                Color = o.Value<string>("color")
-                Description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
-            })
-        |> Seq.toList
+            jarray
+            |> Seq.cast<JObject>
+            |> Seq.map (fun o ->
+                {
+                    Name = o.Value<string>("name")
+                    Color = o.Value<string>("color")
+                    Description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
+                })
+            |> Seq.toList
         with ex ->
-        logError $"❌ Ошибка парсинга ответа: {ex.Message}"
-        []
+            logError $"❌ Ошибка парсинга ответа: {ex.Message}"
+            []
 
 // ==============================================================================
 // 10. План синхронизации
