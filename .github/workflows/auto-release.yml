@@ -66,6 +66,17 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
+      - name: 🏷️ Create tag if missing
+        if: steps.check_release.outputs.release_exists == 'false'
+        run: |
+          TAG=v${{ steps.version.outputs.version }}
+          echo "Creating annotated tag: $TAG"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+
       - name: 📣 Publish draft or create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
