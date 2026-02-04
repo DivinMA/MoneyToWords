@@ -6,11 +6,13 @@ on:
     paths:
       - '.github/config/labels.json'
       - '.github/scripts/generate-contributing.fsx'
+      - '.github/scripts/sync-labels.fsx'
       - 'package.json'
   pull_request:
     paths:
       - '.github/config/labels.json'
       - '.github/scripts/generate-contributing.fsx'
+      - '.github/scripts/sync-labels.fsx'
       - 'package.json'
 
 permissions:
@@ -28,7 +30,6 @@ jobs:
         with:
           node-version: '>=24'
           cache: 'npm'
-          # package-manager-cache: true  # По умолчанию true, можно не указывать
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
