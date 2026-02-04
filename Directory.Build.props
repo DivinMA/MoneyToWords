@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
     <!-- ================================================================= -->
     <!-- CENTRALIZED BUILD CONFIGURATION -->
     <!-- Directory.Build.props — применяется ко всем проектам -->
@@ -53,6 +53,9 @@
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
         <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <TreatWarningsAsErrors Condition="'$(GITHUB_ACTIONS)' == 'true'">true</TreatWarningsAsErrors>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
     <!-- Отключаем RestoreLockedMode в CI -->

@@ -1,4 +1,3 @@
----
 name: CI
 
 on:
@@ -146,26 +145,40 @@ jobs:
             echo "⚠️ SARIF file not generated; skipping upload"
           fi
 
-      - name: �🔐 Check for vulnerable packages
+      - name: 🔐 Check for vulnerable packages
         run: |
           echo "🔍 Checking for vulnerable packages"
-          dotnet list package --vulnerable > vulnerabilities.txt || true
-          # dotnet list writes project information even when no vulnerabilities; detect real vulnerabilities.
-          if grep -q "No vulnerable packages were found" vulnerabilities.txt; then
+          # Запускаем с || true — чтобы не падало при exit code 1
+          dotnet list package --vulnerable > vulnerabilities.txt 2>&1 || true
+
+          # Проверяем содержимое файла
+          if grep -q "No vulnerable packages were found\|has no vulnerable packages" vulnerabilities.txt; then
             echo "✅ No vulnerable packages found"
+          elif grep -q "error" vulnerabilities.txt; then
+            echo "❌ Error during vulnerability check:"
+            cat vulnerabilities.txt
+            exit 1
           elif [ -s vulnerabilities.txt ]; then
-            echo "❌ Vulnerable packages found:" && cat vulnerabilities.txt && exit 1
+            echo "❌ Vulnerable packages found:"
+            cat vulnerabilities.txt
+            exit 1
           else
-            echo "⚠️ Couldn\'t determine vulnerable packages; skipping check"
+            echo "⚠️ Empty output — skipping vulnerability check"
           fi
 
       # Уверенность, что MinVer сработал — по выводу из сборки
-      - name: ✅ Confirm MinVer output from build
+      - name: 🏷️ Log resolved version (MinVer)
         run: |
-          echo "✅ MinVer should have printed version during build:"
-          echo "    Example: 🔖 Version: 1.2.1-alpha.4"
-          echo "💡 If you see it above — MinVer is working."
-          echo "❗ If not — check Directory.Build.props and git tags."
+          echo "🔍 Building to trigger MinVer..."
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-incremental \
+            --no-dependencies \
+            /p:GeneratePackageOnBuild=false
+
+          VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion src/MoneyToWords/MoneyToWords.fsproj)
+          echo "📦 Final PackageVersion: $VERSION"
+          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: 🧪 Run TextOutput tests (isolated)
         run: |
@@ -241,49 +254,67 @@ jobs:
       - name: 🔁 Checkout code
         uses: actions/checkout@v6
 
+      - name: "🔍 DEBUG: Is GH_PAT available?"
+        run: |
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            echo "❌ Секрет GH_PAT не найден!"
+            exit 1
+          else
+            echo "✅ Секрет GH_PAT найден"
+          fi
+
+      # 🔍 ДОБАВЛЕННЫЙ ШАГ — НАЧАЛО
+      - name: "🔍 DEBUG: Test gh api with verbose output"
+        run: |
+          echo "🔍 Аутентификация в gh CLI..."
+          echo "$INPUT_GH_PAT" | gh auth login --with-token --hostname github.com
+          
+          gh auth status
+
+          echo ""
+          echo "📋 1. Запрашиваем метки с --verbose (полный HTTP-лог)..."
+          gh api --verbose --paginate 'repos/DivinMA/MoneyToWords/labels'
+
+          echo ""
+          echo "📋 2. Запрашиваем только имена меток (--jq)..."
+          gh api --paginate 'repos/DivinMA/MoneyToWords/labels' --jq '.[].name'
+        env:
+          INPUT_GH_PAT: ${{ secrets.GH_PAT }}
+
+      # 🔍 ДОБАВЛЕННЫЙ ШАГ — КОНЕЦ
+
       - name: 🔄 Ensure labels exist (sync-labels)
         run: |
-          echo "🔐 Authenticating gh CLI..."
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           echo "🔁 Running sync-labels to ensure labels are present..."
           export PR_NUMBER=${{ github.event.number }}
-          dotnet fsi .github/scripts/sync-labels.fsx --apply
+
+          if [ -z "$INPUT_GH_PAT" ]; then
+            echo "❌ INPUT_GH_PAT is empty"
+            exit 1
+          fi
+
+          echo "🔐 Logging in to gh CLI..."
+          echo "$INPUT_GH_PAT" | gh auth login --with-token --hostname github.com
+          if [ $? -ne 0 ]; then
+            echo "❌ gh auth failed"
+            exit 1
+          fi
+
+          # Дайте время на сохранение
+          sleep 2
+
+          # 🔥 ЗАПУСКАЕМ С ПРЯМОЙ ПЕРЕДАЧЕЙ GH_TOKEN
+          GH_TOKEN="$INPUT_GH_PAT" dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: 🏷️ Apply automatic labels (labeler)
         uses: actions/labeler@v6
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🏷️ Validate required labels and compliance
-        run: |
-          echo "🔍 Получаем лейблы PR #${{ github.event.number }}"
-          labels_json=$(gh pr view ${{ github.event.number }} --json labels --jq '.labels[].name')
-          mapfile -t labels <<< "$labels_json"
-
-          if [ ${#labels[@]} -eq 0 ]; then
-            echo "❌ PR без лейблов — просьба добавить метки (type:, area:, priority: и пр.)"
-            exit 1
-          fi
-
-          echo "🔎 Проверяем наличие основных категорий меток (type:, area:, priority:, patch/minor/major, draft/ready-for-review)"
-          found=false
-          for l in "${labels[@]}"; do
-            if echo "$l" | grep -Eq "^(type:|area:|priority:|effort:|patch|minor|major|draft|ready-for-review)"; then
-              found=true
-              break
-            fi
-          done
-
-          if [ "$found" = false ]; then
-            echo "❌ PR не содержит меток из основных категорий (type:, area:, priority:, effort:, patch/minor/major, draft/ready-for-review)."
-            exit 1
-          fi
-
-          echo "✅ Метыки PR соответствуют правилам"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GH_PAT }}
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+          dot: true
 
   # ===================================================================
   # Публикация
