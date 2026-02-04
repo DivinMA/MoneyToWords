@@ -266,19 +266,20 @@ jobs:
       # 🔍 ДОБАВЛЕННЫЙ ШАГ — НАЧАЛО
       - name: "🔍 DEBUG: Test gh api with verbose output"
         run: |
-          echo "🔍 Запускаем gh api напрямую с --verbose..."
-          
-          # Аутентифицируемся через stdin, а не через переменную
+          echo "🔍 Аутентификация в gh CLI..."
           echo "$INPUT_GH_PAT" | gh auth login --with-token --hostname github.com
           
-          # Проверим, что вошли
           gh auth status
 
-          # Теперь запросим метки
-          echo "📋 Запрашиваем метки..."
-          gh api --verbose --paginate 'repos/DivinMA/MoneyToWords/labels' --jq '.[].name'
+          echo ""
+          echo "📋 1. Запрашиваем метки с --verbose (полный HTTP-лог)..."
+          gh api --verbose --paginate 'repos/DivinMA/MoneyToWords/labels'
+
+          echo ""
+          echo "📋 2. Запрашиваем только имена меток (--jq)..."
+          gh api --paginate 'repos/DivinMA/MoneyToWords/labels' --jq '.[].name'
         env:
-          INPUT_GH_PAT: ${{ secrets.GH_PAT }}  # ← не GH_TOKEN!
+          INPUT_GH_PAT: ${{ secrets.GH_PAT }}
 
       # 🔍 ДОБАВЛЕННЫЙ ШАГ — КОНЕЦ
 
