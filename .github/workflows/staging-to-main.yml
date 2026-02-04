@@ -1,0 +1,33 @@
+name: 🔒 Enforce staging → main
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  pull-requests: read
+  checks: write
+
+jobs:
+  enforce-merge-flow:
+    runs-on: ubuntu-latest
+    name: Prevent direct merges to main
+
+    steps:
+      - name: 🚫 Block non-staging PRs to main
+        run: |
+          HEAD_REF="${{ github.event.pull_request.head.ref }}"
+          
+          # Разрешены: staging, release/*, hotfix/*
+          case "$HEAD_REF" in
+            "staging"|"release/"*"|"hotfix/"*)
+              echo "✅ PR from '$HEAD_REF' to 'main' is allowed."
+              exit 0
+              ;;
+            *)
+              echo "::error::Direct PR to 'main' is forbidden. Merge via 'staging' first."
+              echo "💡 Use: feature → staging → main"
+              exit 1
+              ;;
+          esac

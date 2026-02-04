@@ -1,4 +1,3 @@
----
 name: CI
 
 on:
@@ -146,26 +145,37 @@ jobs:
             echo "⚠️ SARIF file not generated; skipping upload"
           fi
 
-      - name: �🔐 Check for vulnerable packages
+      - name: 🔐 Check for vulnerable packages
         run: |
           echo "🔍 Checking for vulnerable packages"
-          dotnet list package --vulnerable > vulnerabilities.txt || true
-          # dotnet list writes project information even when no vulnerabilities; detect real vulnerabilities.
-          if grep -q "No vulnerable packages were found" vulnerabilities.txt; then
+          # Запускаем с || true — чтобы не падало при exit code 1
+          dotnet list package --vulnerable > vulnerabilities.txt 2>&1 || true
+
+          # Проверяем содержимое файла
+          if grep -q "No vulnerable packages were found\|has no vulnerable packages" vulnerabilities.txt; then
             echo "✅ No vulnerable packages found"
+          elif grep -q "error" vulnerabilities.txt; then
+            echo "❌ Error during vulnerability check:"
+            cat vulnerabilities.txt
+            exit 1
           elif [ -s vulnerabilities.txt ]; then
-            echo "❌ Vulnerable packages found:" && cat vulnerabilities.txt && exit 1
+            echo "❌ Vulnerable packages found:"
+            cat vulnerabilities.txt
+            exit 1
           else
-            echo "⚠️ Couldn\'t determine vulnerable packages; skipping check"
+            echo "⚠️ Empty output — skipping vulnerability check"
           fi
 
       # Уверенность, что MinVer сработал — по выводу из сборки
-      - name: ✅ Confirm MinVer output from build
+      - name: 🏷️ Log resolved version (MinVer)
         run: |
-          echo "✅ MinVer should have printed version during build:"
-          echo "    Example: 🔖 Version: 1.2.1-alpha.4"
-          echo "💡 If you see it above — MinVer is working."
-          echo "❗ If not — check Directory.Build.props and git tags."
+          echo "🔍 Resolving version via MinVer..."
+          VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj)
+          echo "📦 Final PackageVersion: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "::error::Failed to resolve version via MinVer"
+            exit 1
+          fi
 
       - name: 🧪 Run TextOutput tests (isolated)
         run: |
@@ -243,8 +253,6 @@ jobs:
 
       - name: 🔄 Ensure labels exist (sync-labels)
         run: |
-          echo "🔐 Authenticating gh CLI..."
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           echo "🔁 Running sync-labels to ensure labels are present..."
           export PR_NUMBER=${{ github.event.number }}
           dotnet fsi .github/scripts/sync-labels.fsx --apply
