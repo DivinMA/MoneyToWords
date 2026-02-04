@@ -264,6 +264,17 @@ jobs:
             exit 1
           fi
 
+          # 🔍 ДИАГНОСТИКА: проверим, видны ли метки
+          echo "🔍 Fetching all label names..."
+          LABELS_OUTPUT=$(gh api --paginate 'repos/DivinMA/MoneyToWords/labels' --jq '.[].name' || echo "NULL")
+          if [ "$LABELS_OUTPUT" = "NULL" ] || [ -z "$LABELS_OUTPUT" ]; then
+            echo "❌ API вернул пустой ответ — возможно, нет прав"
+            exit 1
+          else
+            echo "✅ Получено $(echo "$LABELS_OUTPUT" | wc -l) меток:"
+            echo "$LABELS_OUTPUT" | head -20
+          fi
+
           # ✅ Теперь запускаем скрипт — он сможет использовать gh
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:

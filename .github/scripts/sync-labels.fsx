@@ -41,7 +41,7 @@ let allowedLabels =
             "good first issue"
         ]
 
-// ==============================================================================
+// ==============================================================================applyChanges
 // 3. Аргументы и режим
 // ==============================================================================
 
@@ -438,9 +438,17 @@ let applyChanges (plan: SyncPlan) =
     log ""
     log "🔁 Применяем изменения..."
 
+    // Убедимся, что мы можем читать метки перед созданием
+    let currentNames = getCurrentLabels() |> List.map (fun l -> l.Name) |> Set.ofList
+    log $"📌 Уже существует {currentNames.Count} меток"
+
     let mutable errors = 0
 
     for name in plan.Missing do
+        if currentNames.Contains name then
+            log $"🟡 Пропуск: метка '{name}' уже существует"
+        else
+
         let lbl = plan.ExpectedMap.[name]
 
         let cmd =
