@@ -291,7 +291,7 @@ jobs:
       - name: 🏷️ Apply automatic labels (labeler)
         uses: actions/labeler@v6
         with:
-          token: ${{ secrets.GH_PAT }}
+          repo-token: ${{ secrets.GH_PAT }}   # ← ПРАВИЛЬНО
           configuration-path: .github/labeler.yml
           sync-labels: false
           dot: true
