@@ -253,8 +253,6 @@ jobs:
 
       - name: 🔄 Ensure labels exist (sync-labels)
         run: |
-          echo "🔐 Authenticating gh CLI..."
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           echo "🔁 Running sync-labels to ensure labels are present..."
           export PR_NUMBER=${{ github.event.number }}
           dotnet fsi .github/scripts/sync-labels.fsx --apply
