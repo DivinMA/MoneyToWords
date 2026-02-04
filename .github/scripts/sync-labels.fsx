@@ -168,10 +168,23 @@ let ensureLoggedIn () =
         log "🧪 Режим --dry-run: пропуск проверки авторизации"
 
 let wasLabelUsed (name: string) =
-    let safeName = name.Replace("'", "\\'")
-    let cmd = sprintf "gh search issues --label '%s' --json number --limit 1" safeName
-    let (_, code) = runCommand cmd
-    code = 0
+    if String.IsNullOrEmpty name then
+        logError "⚠️ Попытка проверить использование пустой метки — возвращаем false"
+        false
+    else
+        let safeName = name.Replace("'", "\\'")
+        let cmd = sprintf "gh search issues --label '%s' --json number --limit 1" safeName
+        let (output, code) = runCommand cmd
+
+        if code <> 0 then
+            logError $"⚠️ Ошибка при проверке использования метки '{name}': код {code}"
+            if not (String.IsNullOrWhiteSpace output) then
+                logError $"   Вывод: {output}"
+            false
+        elif String.IsNullOrWhiteSpace output || output.Trim() = "[]" then
+            false
+        else
+            true
 
 // ==============================================================================
 // 7. Модель
@@ -190,24 +203,64 @@ type Label =
 
 let getExpectedLabels () : Label list =
     if not (File.Exists labelsJsonPath) then
-        logError $"❌ Файл не найден: {labelsJsonPath}"
+        logError $"❌ Файл конфигурации не найден: {labelsJsonPath}"
+        logError "💡 Убедитесь, что файл существует и правильно указан путь"
         exit 1
 
     try
         let json = File.ReadAllText labelsJsonPath
-        let jarray = JsonConvert.DeserializeObject<JArray>(json)
+        if String.IsNullOrWhiteSpace json then
+            logError "❌ Файл labels.json пустой"
+            exit 1
 
-        jarray
-        |> Seq.cast<JObject>
-        |> Seq.map (fun o ->
-            {
-                Name = o.Value<string>("name")
-                Color = o.Value<string>("color")
-                Description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
-            })
-        |> Seq.toList
+        let trimmed = json.Trim()
+        if trimmed.StartsWith("{") || trimmed.StartsWith("[") |> not then
+            logError "❌ Некорректный формат JSON: ожидался массив или объект"
+            exit 1
+
+        let jarray = JsonConvert.DeserializeObject<JArray>(trimmed)
+
+        if jarray.Count = 0 then
+            log "🟡 Внимание: labels.json содержит 0 меток"
+            []
+
+        else
+            jarray
+            |> Seq.cast<JObject>
+            |> Seq.choose (fun o ->
+                try
+                    let nameToken = o.SelectToken("name")
+                    let colorToken = o.SelectToken("color")
+
+                    if nameToken = null || colorToken = null then
+                        logError "⚠️ Пропуск метки: отсутствуют обязательные поля 'name' или 'color'"
+                        None
+                    else
+                        let name = nameToken.Value<string>()
+                        let color = colorToken.Value<string>()
+                        let description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
+
+                        if String.IsNullOrEmpty name then
+                            logError "⚠️ Пропуск метки: пустое имя"
+                            None
+                        elif String.IsNullOrEmpty color then
+                            logError $"⚠️ Пропуск метки '{name}': пустой цвет"
+                            None
+                        else
+                            Some {
+                                Name = name
+                                Color = color
+                                Description = description
+                            }
+                with ex ->
+                    logError $"⚠️ Ошибка при обработке метки: {ex.Message}"
+                    None)
+            |> Seq.toList
+
     with ex ->
-        logError $"❌ Ошибка парсинга labels.json: {ex.Message}"
+        logError $"❌ Критическая ошибка при чтении labels.json: {ex.Message}"
+        if ex.InnerException <> null then
+            logError $"   Внутренняя ошибка: {ex.InnerException.Message}"
         exit 1
 
 // ==============================================================================
@@ -219,24 +272,45 @@ let getCurrentLabels () : Label list =
     let cmd = "gh api --paginate repos/DivinMA/MoneyToWords/labels"
     let (output, code) = runCommand cmd
 
-    if code <> 0 || String.IsNullOrWhiteSpace(output) then
-        logError "❌ Не удалось получить метки"
+    if code <> 0 then
+        logError $"❌ Не удалось получить метки: код выхода {code}"
+        if not (String.IsNullOrWhiteSpace output) then
+            logError $"   Вывод: {output}"
+        []
+    elif String.IsNullOrWhiteSpace(output) then
+        logError "❌ Пустой ответ от GitHub API"
         []
     else
         try
-            let jarray = JsonConvert.DeserializeObject<JArray>(output.Trim())
+            let trimmed = output.Trim()
+            if trimmed.StartsWith("[]") || String.IsNullOrEmpty trimmed then
+                log "🟡 Ответ от API пустой — возвращаем пустой список меток"
+                []
+            else
+                let jarray = JsonConvert.DeserializeObject<JArray>(trimmed)
 
-            jarray
-            |> Seq.cast<JObject>
-            |> Seq.map (fun o ->
-                {
-                    Name = o.Value<string>("name")
-                    Color = o.Value<string>("color")
-                    Description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
-                })
-            |> Seq.toList
+                jarray
+                |> Seq.cast<JObject>
+                |> Seq.choose (fun o ->
+                    try
+                        let name = o.Value<string>("name")
+                        let color = o.Value<string>("color")
+                        let description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
+                        if String.IsNullOrEmpty name || String.IsNullOrEmpty color then
+                            None
+                        else
+                            Some {
+                                Name = name
+                                Color = color
+                                Description = description
+                            }
+                    with ex ->
+                        logError $"⚠️ Пропуск метки из-за ошибки парсинга: {ex.Message}"
+                        None)
+                |> Seq.toList
         with ex ->
-            logError $"❌ Ошибка парсинга ответа: {ex.Message}"
+            logError $"❌ Ошибка парсинга ответа от GitHub API: {ex.Message}"
+            logError $"""   Пример вывода: {if output.Length > 200 then output.Substring(0, 200) + "..." else output}"""
             []
 
 // ==============================================================================
@@ -470,42 +544,48 @@ let syncLabels () =
 
     // === Функция: опубликовать комментарий в PR ===
     let postPrComment () =
-        let prNumber = Environment.GetEnvironmentVariable("PR_NUMBER")
+        let prNumberStr = Environment.GetEnvironmentVariable("PR_NUMBER")
 
-        if String.IsNullOrEmpty prNumber then
+        if String.IsNullOrEmpty prNumberStr then
             log "⏭️  PR_NUMBER не задан — пропуск комментария"
         else
-            let sb = StringBuilder()
-            sb.AppendLine("### 🔄 Синхронизация меток завершена") |> ignore
-
-            if not plan.Missing.IsEmpty then
-                sb.AppendLine($"- ✅ Создано: {Set.count plan.Missing}") |> ignore
-
-            if not plan.ToDeprecate.IsEmpty then
-                sb.AppendLine($"- 🟡 Помечено как deprecated: {Set.count plan.ToDeprecate}")
-                |> ignore
-
-            if not plan.ToDelete.IsEmpty then
-                sb.AppendLine($"- 🗑️ Удалено: {Set.count plan.ToDelete}") |> ignore
-
-            if not plan.Outdated.IsEmpty then
-                sb.AppendLine($"- 🔄 Обновлено: {List.length plan.Outdated}") |> ignore
-
-            if errors = 0 then
-                sb.AppendLine("\n🎉 Все изменения применены успешно.") |> ignore
+            let mutable prNumber = 0
+            if not (Int32.TryParse(prNumberStr, &prNumber)) then
+                logError $"⚠️  Не удалось распарсить PR_NUMBER: '{prNumberStr}' — пропуск комментария"
+            elif prNumber <= 0 then
+                logError $"⚠️  Некорректный номер PR: {prNumber} — пропуск комментария"
             else
-                sb.AppendLine($"\n⚠️ Ошибок: {errors}") |> ignore
+                let sb = StringBuilder()
+                sb.AppendLine("### 🔄 Синхронизация меток завершена") |> ignore
 
-            let body = sb.ToString().Replace("'", "\\'")
-            let cmd = sprintf "gh issue comment %s --body '%s'" prNumber body
+                if not plan.Missing.IsEmpty then
+                    sb.AppendLine($"- ✅ Создано: {Set.count plan.Missing}") |> ignore
 
-            log "💬 Публикуем комментарий в PR..."
-            let (_, code) = runCommand cmd
+                if not plan.ToDeprecate.IsEmpty then
+                    sb.AppendLine($"- 🟡 Помечено как deprecated: {Set.count plan.ToDeprecate}")
+                    |> ignore
 
-            if code = 0 then
-                log "✅ Комментарий добавлен"
-            else
-                logError "❌ Не удалось добавить комментарий"
+                if not plan.ToDelete.IsEmpty then
+                    sb.AppendLine($"- 🗑️ Удалено: {Set.count plan.ToDelete}") |> ignore
+
+                if not plan.Outdated.IsEmpty then
+                    sb.AppendLine($"- 🔄 Обновлено: {List.length plan.Outdated}") |> ignore
+
+                if errors = 0 then
+                    sb.AppendLine("\n🎉 Все изменения применены успешно.") |> ignore
+                else
+                    sb.AppendLine($"\n⚠️ Ошибок: {errors}") |> ignore
+
+                let body = sb.ToString().Replace("'", "\\'")
+                let cmd = sprintf "gh issue comment %d --body '%s'" prNumber body
+
+                log "💬 Публикуем комментарий в PR..."
+                let (_, code) = runCommand cmd
+
+                if code = 0 then
+                    log "✅ Комментарий добавлен"
+                else
+                    logError "❌ Не удалось добавить комментарий"
 
     // === Вызов комментария, если были изменения ===
     let totalChanges =

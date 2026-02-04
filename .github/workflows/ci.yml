@@ -254,7 +254,19 @@ jobs:
       - name: 🔄 Ensure labels exist (sync-labels)
         run: |
           echo "🔁 Running sync-labels to ensure labels are present..."
+          echo "📌 PR_NUMBER will be set to: ${{ github.event.number }}"
           export PR_NUMBER=${{ github.event.number }}
+          
+          # Debug: check if file exists
+          if [ ! -f ".github/scripts/sync-labels.fsx" ]; then
+            echo "❌ File .github/scripts/sync-labels.fsx not found!"
+            ls -la .github/scripts/
+            exit 1
+          fi
+          
+          # Debug: show first lines of script
+          head -n 10 .github/scripts/sync-labels.fsx
+
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -289,7 +301,7 @@ jobs:
             exit 1
           fi
 
-          echo "✅ Метыки PR соответствуют правилам"
+          echo "✅ Метки PR соответствуют правилам"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
