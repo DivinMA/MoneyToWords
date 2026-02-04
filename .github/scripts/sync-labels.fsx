@@ -269,7 +269,7 @@ let getExpectedLabels () : Label list =
 
 let getCurrentLabels () : Label list =
     log "🔍 Получаем метки из GitHub..."
-    let cmd = "gh api --paginate repos/DivinMA/MoneyToWords/labels"
+    let cmd = "gh api --paginate 'repos/DivinMA/MoneyToWords/labels' --header 'Accept: application/vnd.github+json'"
     let (output, code) = runCommand cmd
 
     if code <> 0 then
