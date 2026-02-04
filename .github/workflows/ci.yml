@@ -265,23 +265,25 @@ jobs:
           echo "🔁 Running sync-labels to ensure labels are present..."
           export PR_NUMBER=${{ github.event.number }}
 
-          if [ -z "$GH_TOKEN" ]; then
-            echo "❌ GH_TOKEN is empty"
+          # 🔐 Аутентификация — используем НЕ GH_TOKEN и НЕ GITHUB_TOKEN
+          if [ -z "$INPUT_GH_PAT" ]; then
+            echo "❌ INPUT_GH_PAT is empty"
             exit 1
           fi
 
-          echo "🔐 Authenticating gh CLI with token..."
-          echo "$GH_TOKEN" | gh auth login --with-token --hostname github.com
+          echo "🔐 Logging in to gh CLI..."
+          echo "$INPUT_GH_PAT" | gh auth login --with-token --hostname github.com
           if [ $? -ne 0 ]; then
-            echo "❌ Failed to authenticate gh CLI"
+            echo "❌ gh auth failed"
             exit 1
           fi
 
           gh auth status
 
+          # Теперь запускаем скрипт — он будет использовать gh без токена в env
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          INPUT_GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: 🏷️ Apply automatic labels (labeler)
         uses: actions/labeler@v6
