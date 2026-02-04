@@ -169,13 +169,16 @@ jobs:
       # Уверенность, что MinVer сработал — по выводу из сборки
       - name: 🏷️ Log resolved version (MinVer)
         run: |
-          echo "🔍 Resolving version via MinVer..."
-          VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj)
+          echo "🔍 Building to trigger MinVer..."
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-incremental \
+            --no-dependencies \
+            /p:GeneratePackageOnBuild=false
+
+          VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion src/MoneyToWords/MoneyToWords.fsproj)
           echo "📦 Final PackageVersion: $VERSION"
-          if [ -z "$VERSION" ]; then
-            echo "::error::Failed to resolve version via MinVer"
-            exit 1
-          fi
+          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: 🧪 Run TextOutput tests (isolated)
         run: |
