@@ -300,12 +300,11 @@ jobs:
             exit 1
           fi
 
-          # Дайте gh время сохранить конфиг
+          # Дайте время на сохранение
           sleep 2
 
-          gh auth status --show-token
-
-          dotnet fsi .github/scripts/sync-labels.fsx --apply
+          # 🔥 ЗАПУСКАЕМ С ПРЯМОЙ ПЕРЕДАЧЕЙ GH_TOKEN
+          GH_TOKEN="$INPUT_GH_PAT" dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
           INPUT_GH_PAT: ${{ secrets.GH_PAT }}
 
