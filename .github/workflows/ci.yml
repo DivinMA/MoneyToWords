@@ -245,7 +245,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-      issues: write
+      issues: write  # ← важно!
 
     steps:
       - name: 🔁 Checkout code
@@ -254,27 +254,15 @@ jobs:
       - name: 🔄 Ensure labels exist (sync-labels)
         run: |
           echo "🔁 Running sync-labels to ensure labels are present..."
-          echo "📌 PR_NUMBER will be set to: ${{ github.event.number }}"
           export PR_NUMBER=${{ github.event.number }}
-          
-          # Debug: check if file exists
-          if [ ! -f ".github/scripts/sync-labels.fsx" ]; then
-            echo "❌ File .github/scripts/sync-labels.fsx not found!"
-            ls -la .github/scripts/
-            exit 1
-          fi
-          
-          # Debug: show first lines of script
-          head -n 10 .github/scripts/sync-labels.fsx
-
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: 🏷️ Apply automatic labels (labeler)
         uses: actions/labeler@v6
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GH_PAT }}
 
       - name: 🏷️ Validate required labels and compliance
         run: |
@@ -283,11 +271,11 @@ jobs:
           mapfile -t labels <<< "$labels_json"
 
           if [ ${#labels[@]} -eq 0 ]; then
-            echo "❌ PR без лейблов — просьба добавить метки (type:, area:, priority: и пр.)"
+            echo "❌ PR без лейблов — просьба добавить метки"
             exit 1
           fi
 
-          echo "🔎 Проверяем наличие основных категорий меток (type:, area:, priority:, patch/minor/major, draft/ready-for-review)"
+          echo "🔎 Проверяем наличие основных категорий меток"
           found=false
           for l in "${labels[@]}"; do
             if echo "$l" | grep -Eq "^(type:|area:|priority:|effort:|patch|minor|major|draft|ready-for-review)"; then
@@ -297,13 +285,13 @@ jobs:
           done
 
           if [ "$found" = false ]; then
-            echo "❌ PR не содержит меток из основных категорий (type:, area:, priority:, effort:, patch/minor/major, draft/ready-for-review)."
+            echo "❌ PR не содержит обязательных меток"
             exit 1
           fi
 
           echo "✅ Метки PR соответствуют правилам"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
   # ===================================================================
   # Публикация
