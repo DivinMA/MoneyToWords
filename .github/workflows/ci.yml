@@ -148,13 +148,22 @@ jobs:
       - name: 🔐 Check for vulnerable packages
         run: |
           echo "🔍 Checking for vulnerable packages"
-          dotnet list package --vulnerable > vulnerabilities.txt || true
-          if grep -q "No vulnerable packages were found" vulnerabilities.txt; then
+          # Запускаем с || true — чтобы не падало при exit code 1
+          dotnet list package --vulnerable > vulnerabilities.txt 2>&1 || true
+
+          # Проверяем содержимое файла
+          if grep -q "No vulnerable packages were found\|has no vulnerable packages" vulnerabilities.txt; then
             echo "✅ No vulnerable packages found"
+          elif grep -q "error" vulnerabilities.txt; then
+            echo "❌ Error during vulnerability check:"
+            cat vulnerabilities.txt
+            exit 1
           elif [ -s vulnerabilities.txt ]; then
-            echo "❌ Vulnerable packages found:" && cat vulnerabilities.txt && exit 1
+            echo "❌ Vulnerable packages found:"
+            cat vulnerabilities.txt
+            exit 1
           else
-            echo "⚠️ Couldn\'t determine vulnerable packages; skipping check"
+            echo "⚠️ Empty output — skipping vulnerability check"
           fi
 
       # Уверенность, что MinVer сработал — по выводу из сборки
