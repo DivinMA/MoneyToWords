@@ -156,17 +156,19 @@ let ensurePowerShell () =
 let ensureLoggedIn () =
     if not isDryRun then
         log "🔐 Проверка авторизации в gh..."
-        let (out, code) = runCommand "gh auth status"
+        let (out, code) = runCommand "gh auth status --show-token"
 
         if code <> 0 then
             logError "❌ Не авторизован в GitHub CLI"
             logError "Выполните: gh auth login"
             exit 1
+        elif out.Contains("You are not logged into any GitHub hosts") then
+            logError "❌ Не авторизован в GitHub CLI"
+            exit 1
         else
             log "✅ Авторизация подтверждена"
     else
         log "🧪 Режим --dry-run: пропуск проверки авторизации"
-
 let wasLabelUsed (name: string) =
     if String.IsNullOrEmpty name then
         logError "⚠️ Попытка проверить использование пустой метки — возвращаем false"
