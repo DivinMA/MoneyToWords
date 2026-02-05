@@ -254,61 +254,36 @@ jobs:
       - name: 🔁 Checkout code
         uses: actions/checkout@v6
 
-      - name: "🔍 DEBUG: Is GH_PAT available?"
-        run: |
-          if [ -z "${{ secrets.GH_PAT }}" ]; then
-            echo "❌ Секрет GH_PAT не найден!"
-            exit 1
-          else
-            echo "✅ Секрет GH_PAT найден"
-          fi
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
 
-      # 🔍 ДОБАВЛЕННЫЙ ШАГ — НАЧАЛО
-      - name: "🔍 DEBUG: Test gh api with verbose output"
+      - name: 📦 Restore tools and packages
         run: |
-          echo "🔍 Аутентификация в gh CLI..."
-          echo "$INPUT_GH_PAT" | gh auth login --with-token --hostname github.com
-          
+          dotnet tool restore
+          dotnet paket restore
+
+      - name: 🧹 Lint F# scripts
+        run: |
+          dotnet fsharplint lint .github/scripts/*.fsx
+
+      - name: 🔐 Setup GitHub CLI
+        run: |
+          echo "🔐 Using GH_TOKEN for gh CLI"
           gh auth status
-
-          echo ""
-          echo "📋 1. Запрашиваем метки с --verbose (полный HTTP-лог)..."
-          gh api --verbose --paginate 'repos/DivinMA/MoneyToWords/labels'
-
-          echo ""
-          echo "📋 2. Запрашиваем только имена меток (--jq)..."
-          gh api --paginate 'repos/DivinMA/MoneyToWords/labels' --jq '.[].name'
         env:
-          INPUT_GH_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
-      # 🔍 ДОБАВЛЕННЫЙ ШАГ — КОНЕЦ
-
-      - name: 🔄 Ensure labels exist (sync-labels)
+      - name: 🔄 Run sync-labels.fsx
         run: |
-          echo "🔁 Running sync-labels to ensure labels are present..."
-          export PR_NUMBER=${{ github.event.number }}
-
-          if [ -z "$INPUT_GH_PAT" ]; then
-            echo "❌ INPUT_GH_PAT is empty"
-            exit 1
-          fi
-
-          echo "🔐 Logging in to gh CLI..."
-          echo "$INPUT_GH_PAT" | gh auth login --with-token --hostname github.com
-          if [ $? -ne 0 ]; then
-            echo "❌ gh auth failed"
-            exit 1
-          fi
-
-          # Дайте время на сохранение
-          sleep 2
-
-          # 🔥 ЗАПУСКАЕМ С ПРЯМОЙ ПЕРЕДАЧЕЙ GH_TOKEN
-          GH_TOKEN="$INPUT_GH_PAT" dotnet fsi .github/scripts/sync-labels.fsx --apply
+          echo "🔁 Running sync-labels.fsx..."
+          dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
-          INPUT_GH_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          PR_NUMBER: ${{ github.event.number }}
 
-      - name: 🏷️ Apply automatic labels (labeler)
+      - name: 🏷️ Apply automatic labels
         uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GH_PAT }}
