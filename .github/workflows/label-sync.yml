@@ -18,13 +18,21 @@ jobs:
       - name: 🔁 Checkout
         uses: actions/checkout@v6
 
-      - name: ⚙️ Setup gh CLI auth
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 🔐 Setup GitHub CLI
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          echo "🔐 Using GH_TOKEN"
+          gh auth status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🔄 Run sync-labels
         run: |
-          echo "🔍 Running labels sync (will apply changes)..."
+          echo "🔍 Running labels sync..."
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,25 +1,15 @@
 #!/bin/sh
-if [ -f "$(dirname "$0")/_/husky.sh" ]; then
-  . "$(dirname "$0")/_/husky.sh"
-else
-  echo "⚠️ Husky helper not found at .husky/_/husky.sh"
-  echo "   Run: npm ci && npx husky install || npm run prepare"
-  echo "   Please install Husky to enable pre-commit checks."
-  exit 1
-fi
 
 echo "🔍 Pre-commit: проверка системы меток..."
 
 # Auto-apply code formatting
 echo "🎨 Running dotnet format to auto-apply formatting..."
 dotnet tool restore || true
-# If dotnet-format is not available, attempt to install it
 if ! command -v dotnet-format >/dev/null 2>&1; then
   echo "⚠️ dotnet-format not found, attempting to install..."
   dotnet tool install -g dotnet-format || true
   export PATH="$HOME/.dotnet/tools:$PATH"
 fi
-# Run formatter (best-effort). If it makes changes, add them to the commit.
 dotnet format || true
 if ! git diff --quiet; then
   echo "🔁 Formatting changed files; adding them to commit..."
