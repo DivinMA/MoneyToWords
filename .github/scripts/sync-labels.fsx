@@ -1,17 +1,14 @@
-#r "nuget: Newtonsoft.Json"
+#if INTERACTIVE
+// Автоматически работает при запуске из dotnet fsi
+#endif
 
 open System
 open System.IO
 open System.Runtime.InteropServices
 open System.Text
-open System.Threading
 open System.Diagnostics
-open Newtonsoft.Json
-open Newtonsoft.Json.Linq
-
-// ==============================================================================
-// 0. Платформа
-// ==============================================================================
+open System.Text.Json
+open System.Text.Json.Serialization
 
 #if !WINDOWS
 let isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -19,16 +16,8 @@ let isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 let isWindows = true
 #endif
 
-// ==============================================================================
-// 1. Пути
-// ==============================================================================
-
 let scriptDir = __SOURCE_DIRECTORY__
 let labelsJsonPath = Path.Combine(scriptDir, "../config/labels.json")
-
-// ==============================================================================
-// 2. Разрешённые метки (не удаляем)
-// ==============================================================================
 
 let allowedLabels =
     set
@@ -41,15 +30,13 @@ let allowedLabels =
             "good first issue"
         ]
 
-// ==============================================================================applyChanges
-// 3. Аргументы и режим
-// ==============================================================================
-
 let args = fsi.CommandLineArgs |> Array.skip 1
-
 let hasApply = Array.contains "--apply" args
 let hasDryRun = Array.contains "--dry-run" args
 let isQuiet = Array.contains "--quiet" args
+let isVerbose = Array.contains "--verbose" args
+
+let verboseLog msg = if isVerbose then printfn "[VERBOSE] %s" msg
 
 let isDryRun =
     if hasDryRun then true
@@ -58,33 +45,16 @@ let isDryRun =
 
 if not isQuiet then
     printfn "⚙️  Режим выполнения:"
-
     if isDryRun then
         printfn "   🧪 --dry-run: изменения НЕ будут применены"
     else
         printfn "   🚀 --apply: изменения БУДУТ применены"
-
-    if hasApply then
-        printfn "   📌 Флаг: --apply"
-
-    if hasDryRun then
-        printfn "   📌 Флаг: --dry-run"
-
+    if hasApply then printfn "   📌 Флаг: --apply"
+    if hasDryRun then printfn "   📌 Флаг: --dry-run"
     printfn "   🌐 Среда: CI=%b" (Environment.GetEnvironmentVariable("CI") = "true")
 
-// ==============================================================================
-// 4. Логирование
-// ==============================================================================
-
-let log msg =
-    if not isQuiet then
-        printfn "%s" msg
-
+let log msg = if not isQuiet then printfn "%s" msg
 let logError msg = eprintfn "%s" msg
-
-// ==============================================================================
-// 5. Выполнение команд
-// ==============================================================================
 
 let runCommand (cmd: string) : string * int =
     let startInfo = ProcessStartInfo()
@@ -92,9 +62,7 @@ let runCommand (cmd: string) : string * int =
     startInfo.RedirectStandardOutput <- true
     startInfo.RedirectStandardError <- true
     startInfo.CreateNoWindow <- true
-
     startInfo.FileName <- if isWindows then "pwsh" else "bash"
-
     startInfo.Arguments <-
         if isWindows then
             sprintf "-NoProfile -Command \"%s\"" cmd
@@ -103,54 +71,22 @@ let runCommand (cmd: string) : string * int =
 
     use proc = new Process()
     proc.StartInfo <- startInfo
-
-    let output = StringBuilder()
-    let error = StringBuilder()
-
-    // 🔐 Добавим lock
-    let outputLock = obj()
-    let errorLock = obj()
-
-    proc.OutputDataReceived.Add(fun args ->
-        if args.Data <> null then
-            lock outputLock (fun () -> output.AppendLine(args.Data) |> ignore))
-
-    proc.ErrorDataReceived.Add(fun args ->
-        if args.Data <> null then
-            lock errorLock (fun () -> error.AppendLine(args.Data) |> ignore))
-
     proc.Start() |> ignore
-    proc.BeginOutputReadLine()
-    proc.BeginErrorReadLine()
 
-    let finished = proc.WaitForExit(30000)
+    let output = proc.StandardOutput.ReadToEnd().Trim()
+    let error = proc.StandardError.ReadToEnd().Trim()
 
-    if not finished then
-        try
-            proc.Kill()
-        with _ ->
-            ()
+    proc.WaitForExit()
 
-        logError "❌ Команда прервана по таймауту"
-        "", 1
-    else
-        let out = output.ToString().Trim()
-        let err = error.ToString().Trim()
+    if not (String.IsNullOrEmpty error) then
+        logError ("STDERR: " + error)
 
-        if not (String.IsNullOrEmpty err) then
-            logError ("STDERR: " + err)
-
-        out, proc.ExitCode
-
-// ==============================================================================
-// 6. Проверки окружения
-// ==============================================================================
+    output, proc.ExitCode
 
 let ensurePowerShell () =
     if isWindows then
         log "🔧 Проверка pwsh..."
         let (out, code) = runCommand "pwsh --version"
-
         if code <> 0 then
             logError "❌ Требуется PowerShell Core"
             exit 1
@@ -160,13 +96,8 @@ let ensurePowerShell () =
 let ensureLoggedIn () =
     if not isDryRun then
         log "🔐 Проверка авторизации в gh..."
-        let (out, code) = runCommand "gh auth status --show-token"
-
-        if code <> 0 then
-            logError "❌ Не авторизован в GitHub CLI"
-            logError "Выполните: gh auth login"
-            exit 1
-        elif out.Contains("You are not logged into any GitHub hosts") then
+        let (out, code) = runCommand "gh auth status"
+        if code <> 0 || out.Contains("not logged in") then
             logError "❌ Не авторизован в GitHub CLI"
             exit 1
         else
@@ -174,29 +105,12 @@ let ensureLoggedIn () =
     else
         log "🧪 Режим --dry-run: пропуск проверки авторизации"
 
-
 let wasLabelUsed (name: string) =
-    if String.IsNullOrEmpty name then
-        logError "⚠️ Попытка проверить использование пустой метки — возвращаем false"
-        false
-    else
-        let safeName = name.Replace("'", "\\'")
-        let cmd = sprintf "gh search issues --label '%s' --json number --limit 1" safeName
-        let (output, code) = runCommand cmd
-
-        if code <> 0 then
-            logError $"⚠️ Ошибка при проверке использования метки '{name}': код {code}"
-            if not (String.IsNullOrWhiteSpace output) then
-                logError $"   Вывод: {output}"
-            false
-        elif String.IsNullOrWhiteSpace output || output.Trim() = "[]" then
-            false
-        else
-            true
-
-// ==============================================================================
-// 7. Модель
-// ==============================================================================
+    if String.IsNullOrEmpty name then false else
+    let safeName = name.Replace("'", "\\'")
+    let cmd = sprintf "gh search issues --label '%s' --json number --limit 1" safeName
+    let (output, code) = runCommand cmd
+    code = 0 && not (String.IsNullOrWhiteSpace output) && output <> "[]"
 
 type Label =
     {
@@ -205,125 +119,160 @@ type Label =
         Description: string
     }
 
-// ==============================================================================
-// 8. Чтение ожидаемых меток
-// ==============================================================================
+// Простой JSON-конвертер для F# record'ов
+type LabelJsonConverter() =
+    inherit JsonConverter<Label>()
+
+    override _.Read(reader, typeToConvert, options) =
+        let mutable label = { Name = ""; Color = ""; Description = "" }
+        let mutable propName = ""
+
+        let mutable currentReader = reader
+        let mutable nameSet = false
+        let mutable colorSet = false
+
+        // Создаём копию токенов в памяти, чтобы избежать работы с byref
+        let json = 
+            let mutable depth = 0
+            let sb = StringBuilder()
+            while currentReader.Read() do
+                match currentReader.TokenType with
+                | JsonTokenType.StartObject when depth = 0 -> depth <- depth + 1
+                | JsonTokenType.StartObject -> 
+                    depth <- depth + 1
+                    sb.Append("{") |> ignore
+                | JsonTokenType.EndObject when depth = 1 ->
+                    sb.Append("}") |> ignore
+                    depth <- depth - 1
+                    // Выходим, чтобы не читать дальше
+                | JsonTokenType.EndObject ->
+                    sb.Append("}") |> ignore
+                    depth <- depth - 1
+                | JsonTokenType.PropertyName ->
+                    propName <- currentReader.GetString()
+                    sb.Append($"\"{propName}\":") |> ignore
+                | JsonTokenType.String ->
+                    let value = currentReader.GetString()
+                    sb.Append($"\"{value}\"") |> ignore
+                    // Присваиваем поля
+                    match propName.ToLowerInvariant() with
+                    | "name" -> label <- { label with Name = value }; nameSet <- true
+                    | "color" -> label <- { label with Color = value }; colorSet <- true
+                    | "description" -> label <- { label with Description = value }
+                    | _ -> ()
+                | JsonTokenType.Number ->
+                    let value = currentReader.GetDecimal()
+                    sb.Append(value.ToString()) |> ignore
+                | JsonTokenType.True -> sb.Append("true") |> ignore
+                | JsonTokenType.False -> sb.Append("false") |> ignore
+                | JsonTokenType.Null -> sb.Append("null") |> ignore
+                | _ -> ()
+            sb.ToString()
+
+        if not nameSet || not colorSet then
+            raise (JsonException("Label must have 'name' and 'color'"))
+
+        label
+
+    override _.Write(writer, value, options) =
+        writer.WriteStartObject()
+        writer.WriteString("name", value.Name)
+        writer.WriteString("color", value.Color)
+        if not (String.IsNullOrEmpty value.Description) then
+            writer.WriteString("description", value.Description)
+        writer.WriteEndObject()
+
+let jsonOptions =
+    let opts = JsonSerializerOptions()
+    opts.Converters.Add(LabelJsonConverter())
+    opts.PropertyNamingPolicy <- JsonNamingPolicy.CamelCase
+    opts.WriteIndented <- false
+    opts
 
 let getExpectedLabels () : Label list =
     if not (File.Exists labelsJsonPath) then
         logError $"❌ Файл конфигурации не найден: {labelsJsonPath}"
-        logError "💡 Убедитесь, что файл существует и правильно указан путь"
         exit 1
 
     try
         let json = File.ReadAllText labelsJsonPath
-        if String.IsNullOrWhiteSpace json then
-            logError "❌ Файл labels.json пустой"
-            exit 1
+        let doc = JsonDocument.Parse(json)
+        let root = doc.RootElement
 
-        let trimmed = json.Trim()
-        if trimmed.StartsWith("{") || trimmed.StartsWith("[") |> not then
-            logError "❌ Некорректный формат JSON: ожидался массив или объект"
-            exit 1
+        let labels =
+            seq {
+                if root.ValueKind = JsonValueKind.Array then
+                    yield! root.EnumerateArray()
+                else
+                    yield root
+            }
 
-        let jarray = JsonConvert.DeserializeObject<JArray>(trimmed)
-
-        if jarray.Count = 0 then
-            log "🟡 Внимание: labels.json содержит 0 меток"
-            []
-
-        else
-            jarray
-            |> Seq.cast<JObject>
-            |> Seq.choose (fun o ->
+        let result =
+            labels
+            |> Seq.choose (fun el ->
                 try
-                    let nameToken = o.SelectToken("name")
-                    let colorToken = o.SelectToken("color")
+                    let name = el.GetProperty("name").GetString()
+                    let color = el.GetProperty("color").GetString()
 
-                    if nameToken = null || colorToken = null then
-                        logError "⚠️ Пропуск метки: отсутствуют обязательные поля 'name' или 'color'"
+                    let mutable descriptionElement = JsonElement()
+                    let description =
+                        if el.TryGetProperty("description", &descriptionElement) then
+                            descriptionElement.GetString()
+                        else
+                            ""
+
+                    if String.IsNullOrEmpty name || String.IsNullOrEmpty color then
                         None
                     else
-                        let name = nameToken.Value<string>()
-                        let color = colorToken.Value<string>()
-                        let description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
+                        Some { Name = name; Color = color; Description = description }
+                with _ -> None)
+            |> List.ofSeq
 
-                        if String.IsNullOrEmpty name then
-                            logError "⚠️ Пропуск метки: пустое имя"
-                            None
-                        elif String.IsNullOrEmpty color then
-                            logError $"⚠️ Пропуск метки '{name}': пустой цвет"
-                            None
-                        else
-                            Some {
-                                Name = name
-                                Color = color
-                                Description = description
-                            }
-                with ex ->
-                    logError $"⚠️ Ошибка при обработке метки: {ex.Message}"
-                    None)
-            |> Seq.toList
-
+        doc.Dispose()
+        result
     with ex ->
-        logError $"❌ Критическая ошибка при чтении labels.json: {ex.Message}"
-        if ex.InnerException <> null then
-            logError $"   Внутренняя ошибка: {ex.InnerException.Message}"
+        logError $"❌ Ошибка чтения labels.json: {ex.Message}"
         exit 1
-
-// ==============================================================================
-// 9. Получение текущих меток
-// ==============================================================================
 
 let getCurrentLabels () : Label list =
     log "🔍 Получаем метки из GitHub..."
-    let cmd = "gh api --paginate 'repos/DivinMA/MoneyToWords/labels' --header 'Accept: application/vnd.github+json'"
+    let cmd = "gh api --paginate 'repos/DivinMA/MoneyToWords/labels'"
     let (output, code) = runCommand cmd
 
-    if code <> 0 then
-        logError $"❌ Не удалось получить метки: код выхода {code}"
-        if not (String.IsNullOrWhiteSpace output) then
-            logError $"   Вывод: {output}"
-        []
-    elif String.IsNullOrWhiteSpace(output) then
-        logError "❌ Пустой ответ от GitHub API"
+    if isVerbose then
+        verboseLog $"Ответ от GitHub API:\n{output}"
+
+    if code <> 0 || String.IsNullOrWhiteSpace output then
+        logError $"❌ API вернул ошибку: код={code}"
         []
     else
         try
-            let trimmed = output.Trim()
-            if trimmed.StartsWith("[]") || String.IsNullOrEmpty trimmed then
-                log "🟡 Ответ от API пустой — возвращаем пустой список меток"
-                []
-            else
-                let jarray = JsonConvert.DeserializeObject<JArray>(trimmed)
+            let doc = JsonDocument.Parse(output)
+            let mutable labels = []
 
-                jarray
-                |> Seq.cast<JObject>
-                |> Seq.choose (fun o ->
-                    try
-                        let name = o.Value<string>("name")
-                        let color = o.Value<string>("color")
-                        let description = defaultArg (Option.ofObj (o.Value<string>("description"))) ""
-                        if String.IsNullOrEmpty name || String.IsNullOrEmpty color then
-                            None
+            for element in doc.RootElement.EnumerateArray() do
+                try
+                    let name = element.GetProperty("name").GetString()
+                    let color = element.GetProperty("color").GetString()
+
+                    let mutable descriptionElement = JsonElement()
+                    let description =
+                        if element.TryGetProperty("description", &descriptionElement) then
+                            descriptionElement.GetString()
                         else
-                            Some {
-                                Name = name
-                                Color = color
-                                Description = description
-                            }
-                    with ex ->
-                        logError $"⚠️ Пропуск метки из-за ошибки парсинга: {ex.Message}"
-                        None)
-                |> Seq.toList
-        with ex ->
-            logError $"❌ Ошибка парсинга ответа от GitHub API: {ex.Message}"
-            logError $"""   Пример вывода: {if output.Length > 200 then output.Substring(0, 200) + "..." else output}"""
-            []
+                            ""
 
-// ==============================================================================
-// 10. План синхронизации
-// ==============================================================================
+                    if not (String.IsNullOrEmpty name) && not (String.IsNullOrEmpty color) then
+                        labels <- { Name = name; Color = color; Description = description } :: labels
+                with
+                | _ -> logError "⚠️ Пропущена некорректная метка из API"
+
+            doc.Dispose()
+            List.rev labels  // восстанавливаем порядок
+        with ex ->
+            logError $"❌ Ошибка парсинга JSON: {ex.Message}"
+            logError $"📄 Ответ от API:\n{output}"
+            []
 
 type SyncPlan =
     {
@@ -336,35 +285,19 @@ type SyncPlan =
         ExpectedMap: Map<string, Label>
     }
 
-// ==============================================================================
-// 11. Анализ различий
-// ==============================================================================
-
 let analyzeLabels (current: Label list) (expected: Label list) =
     let currentMap = Map [ for l in current -> l.Name, l ]
     let expectedMap = Map [ for l in expected -> l.Name, l ]
-
-    // ✅ Явное преобразование ICollection -> seq -> Set
-    let currentNames = currentMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
-    let expectedNames = expectedMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+    let currentNames = currentMap |> Map.keys |> Set.ofSeq
+    let expectedNames = expectedMap |> Map.keys |> Set.ofSeq
 
     let missing = Set.difference expectedNames currentNames
-
-    let extra =
-        Set.difference currentNames expectedNames
-        |> Set.filter (fun n -> not (Set.contains n allowedLabels))
+    let extra = Set.difference currentNames expectedNames |> Set.filter (fun n -> not (Set.contains n allowedLabels))
 
     let isProperlyDeprecated (label: Label) =
-        label.Description.StartsWith("Deprecated: use corresponding type:* label instead")
-        && label.Color = "6A737D"
+        label.Description.StartsWith("Deprecated: use corresponding type:* label instead") && label.Color = "6A737D"
 
-    let alreadyDeprecated =
-        extra
-        |> Set.filter (fun name ->
-            match currentMap.TryFind name with
-            | Some label -> isProperlyDeprecated label
-            | None -> false)
-
+    let alreadyDeprecated = extra |> Set.filter (fun name -> currentMap |> Map.tryFind name |> Option.map isProperlyDeprecated |> Option.defaultValue false)
     let notDeprecated = Set.difference extra alreadyDeprecated
     let usedNotDeprecated = Set.filter wasLabelUsed notDeprecated
     let toDelete = Set.difference notDeprecated usedNotDeprecated
@@ -374,11 +307,8 @@ let analyzeLabels (current: Label list) (expected: Label list) =
         expectedMap
         |> Map.toList
         |> List.choose (fun (name, expectedLabel) ->
-            match currentMap.TryFind name with
-            | Some currentLabel when
-                currentLabel.Color <> expectedLabel.Color
-                || currentLabel.Description <> expectedLabel.Description
-                ->
+            match currentMap |> Map.tryFind name with
+            | Some currentLabel when currentLabel.Color <> expectedLabel.Color || currentLabel.Description <> expectedLabel.Description ->
                 Some(name, currentLabel, expectedLabel)
             | _ -> None)
 
@@ -392,61 +322,29 @@ let analyzeLabels (current: Label list) (expected: Label list) =
         ExpectedMap = expectedMap
     }
 
-// ==============================================================================
-// 12. Вывод статуса
-// ==============================================================================
-
 let printStatus (plan: SyncPlan) =
-    log ""
-    log "📊 Состояние меток:"
-
-    let currentKeys = plan.CurrentMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
-    let expectedKeys = plan.ExpectedMap |> Map.toSeq |> Seq.map fst |> Set.ofSeq
-    let active = Set.intersect currentKeys expectedKeys
-
+    log ""; log "📊 Состояние меток:"
+    let active = Set.intersect (plan.CurrentMap |> Map.keys |> Set.ofSeq) (plan.ExpectedMap |> Map.keys |> Set.ofSeq)
     log $"  ✅ Актуальные: {active.Count}"
 
     if not (Set.isEmpty plan.Missing) then
-        let names = String.concat ", " (Set.toList plan.Missing)
-        log $"  🔽 Отсутствуют: {names}"
-
+        log $"""  🔽 Отсутствуют: {String.concat ", " (Set.toList plan.Missing)}"""
     if not (Set.isEmpty plan.ToDelete) then
-        let names = String.concat ", " (Set.toList plan.ToDelete)
-        log $"  🗑️  Будут удалены: {names}"
-
+        log $"""  🗑️  Будут удалены: {String.concat ", " (Set.toList plan.ToDelete)}"""
     if not (Set.isEmpty plan.ToDeprecate) then
-        let names = String.concat ", " (Set.toList plan.ToDeprecate)
-        log $"  🟡 Будут помечены как deprecated: {names}"
-
+        log $"""  🟡 Будут помечены как deprecated: {String.concat ", " (Set.toList plan.ToDeprecate)}"""
     if not (Set.isEmpty plan.AlreadyDeprecated) then
-        let names = String.concat ", " (Set.toList plan.AlreadyDeprecated)
-        log $"  ✅ Уже deprecated: {names}"
-
+        log $"""  ✅ Уже deprecated: {String.concat ", " (Set.toList plan.AlreadyDeprecated)}"""
     if not (List.isEmpty plan.Outdated) then
-        let names = plan.Outdated |> List.map (fun (n, _, _) -> n) |> String.concat ", "
-        log $"  🔄 Требуют обновления: {names}"
+        log $"""  🔄 Требуют обновления: {plan.Outdated |> List.map (fun (n, _, _) -> n) |> String.concat ", "}"""
 
-    if
-        plan.Missing.IsEmpty
-        && plan.ToDelete.IsEmpty
-        && plan.ToDeprecate.IsEmpty
-        && plan.Outdated.IsEmpty
-    then
-        log ""
-        log "🎉 Все метки в порядке"
-        true
+    if plan.Missing.IsEmpty && plan.ToDelete.IsEmpty && plan.ToDeprecate.IsEmpty && plan.Outdated.IsEmpty then
+        log "🎉 Все метки в порядке"; true
     else
         false
 
-// ==============================================================================
-// 13. Применение изменений
-// ==============================================================================
-
 let applyChanges (plan: SyncPlan) =
-    log ""
-    log "🔁 Применяем изменения..."
-
-    // Убедимся, что мы можем читать метки перед созданием
+    log ""; log "🔁 Применяем изменения..."
     let currentNames = getCurrentLabels() |> List.map (fun l -> l.Name) |> Set.ofList
     log $"📌 Уже существует {currentNames.Count} меток"
 
@@ -456,93 +354,39 @@ let applyChanges (plan: SyncPlan) =
         if currentNames.Contains name then
             log $"🟡 Пропуск: метка '{name}' уже существует"
         else
-
-        let lbl = plan.ExpectedMap.[name]
-
-        let cmd =
-            sprintf "gh label create '%s' --force --color %s --description '%s'" name lbl.Color lbl.Description
-
-        log $"🔄 Создаём: {name}"
-        let (output, code) = runCommand cmd
-
-        if code = 0 then
-            log $"✅ Создан: {name}"
-        elif output.Contains("already exists") then
-            log $"🟡 Уже существует: {name} (пропущено)"
-        else
-            logError $"❌ Ошибка: {name}"
-            logError $"   Вывод: {output}"
-            errors <- errors + 1
-
-        Thread.Sleep(500)
-
+            let lbl = plan.ExpectedMap.[name]
+            let cmd = sprintf "gh label create \"%s\" --force --color %s --description \"%s\"" name lbl.Color lbl.Description
+            log $"🔄 Создаём: {name}"
+            let (_, code) = runCommand cmd
+            if code = 0 then log $"✅ Создан: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
 
     for name in plan.ToDeprecate do
-        let cmd =
-            sprintf
-                "gh label edit '%s' --color 6A737D --description 'Deprecated: use corresponding type:* label instead'"
-                name
-
+        let cmd = sprintf "gh label edit \"%s\" --color 6A737D --description \"Deprecated: use corresponding type:* label instead\"" name
         log $"🔄 Помечаем как deprecated: {name}"
         let (_, code) = runCommand cmd
-
-        if code = 0 then
-            log $"✅ Deprecated: {name}"
-        else
-            logError $"⚠️  Не удалось: {name}"
-            errors <- errors + 1
-
-        Thread.Sleep(500)
+        if code = 0 then log $"✅ Deprecated: {name}" else logError $"⚠️ Не удалось: {name}"; errors <- errors + 1
 
     for name in plan.ToDelete do
-        let cmd = sprintf "gh label delete '%s' --yes" name
-        log $"🗑️  Удаляем: {name}"
+        let cmd = sprintf "gh label delete \"%s\" --yes" name
+        log $"🗑️ Удаляем: {name}"
         let (_, code) = runCommand cmd
-
-        if code = 0 then
-            log $"✅ Удалён: {name}"
-        else
-            logError $"❌ Ошибка: {name}"
-            errors <- errors + 1
-
-        Thread.Sleep(500)
+        if code = 0 then log $"✅ Удалён: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
 
     for (name, _, expected) in plan.Outdated do
-        let cmd =
-            sprintf "gh label edit '%s' --color %s --description '%s'" name expected.Color expected.Description
-
+        let cmd = sprintf "gh label edit \"%s\" --color %s --description \"%s\"" name expected.Color expected.Description
         log $"🔄 Обновляем: {name}"
         let (_, code) = runCommand cmd
-
-        if code = 0 then
-            log $"✅ Обновлён: {name}"
-        else
-            logError $"❌ Ошибка: {name}"
-            errors <- errors + 1
-
-        Thread.Sleep(500)
+        if code = 0 then log $"✅ Обновлён: {name}" else logError $"❌ Ошибка: {name}"; errors <- errors + 1
 
     log ""
+    if errors = 0 then log "🎉 Синхронизация успешна"; 0 else logError $"❌ Ошибок: {errors}"; 1
 
-    if errors = 0 then
-        log "🎉 Синхронизация успешна"
-        0
-    else
-        logError $"❌ Ошибок: {errors}"
-        1
-
-// ==============================================================================
-// 14. Основной поток
-// ==============================================================================
-
-// === Публикуем комментарий в PR, если нужно ===
 let syncLabels () =
     ensurePowerShell ()
     ensureLoggedIn ()
 
     let current = getCurrentLabels ()
     let expected = getExpectedLabels ()
-
     let plan = analyzeLabels current expected
 
     if printStatus plan then
@@ -555,73 +399,34 @@ let syncLabels () =
         log "🚀 В CI изменения применяются автоматически."
         exit 0
 
-    // === Применяем изменения ===
     let errors = applyChanges plan
 
-    // === Функция: опубликовать комментарий в PR ===
     let postPrComment () =
         let prNumberStr = Environment.GetEnvironmentVariable("PR_NUMBER")
-
         if String.IsNullOrEmpty prNumberStr then
-            log "⏭️  PR_NUMBER не задан — пропуск комментария"
+            log "⏭️ PR_NUMBER не задан — пропуск комментария"
         else
             let mutable prNumber = 0
-            if not (Int32.TryParse(prNumberStr, &prNumber)) then
-                logError $"⚠️  Не удалось распарсить PR_NUMBER: '{prNumberStr}' — пропуск комментария"
-            elif prNumber <= 0 then
-                logError $"⚠️  Некорректный номер PR: {prNumber} — пропуск комментария"
-            else
-                let sb = StringBuilder()
+            if Int32.TryParse(prNumberStr, &prNumber) && prNumber > 0 then
+                let sb = Text.StringBuilder()
                 sb.AppendLine("### 🔄 Синхронизация меток завершена") |> ignore
-
-                if not plan.Missing.IsEmpty then
-                    sb.AppendLine($"- ✅ Создано: {Set.count plan.Missing}") |> ignore
-
-                if not plan.ToDeprecate.IsEmpty then
-                    sb.AppendLine($"- 🟡 Помечено как deprecated: {Set.count plan.ToDeprecate}")
-                    |> ignore
-
-                if not plan.ToDelete.IsEmpty then
-                    sb.AppendLine($"- 🗑️ Удалено: {Set.count plan.ToDelete}") |> ignore
-
-                if not plan.Outdated.IsEmpty then
-                    sb.AppendLine($"- 🔄 Обновлено: {List.length plan.Outdated}") |> ignore
-
-                if errors = 0 then
-                    sb.AppendLine("\n🎉 Все изменения применены успешно.") |> ignore
-                else
-                    sb.AppendLine($"\n⚠️ Ошибок: {errors}") |> ignore
-
+                if not plan.Missing.IsEmpty then sb.AppendLine($"- ✅ Создано: {Set.count plan.Missing}") |> ignore
+                if not plan.ToDeprecate.IsEmpty then sb.AppendLine($"- 🟡 Помечено как deprecated: {Set.count plan.ToDeprecate}") |> ignore
+                if not plan.ToDelete.IsEmpty then sb.AppendLine($"- 🗑️ Удалено: {Set.count plan.ToDelete}") |> ignore
+                if not plan.Outdated.IsEmpty then sb.AppendLine($"- 🔄 Обновлено: {List.length plan.Outdated}") |> ignore
+                sb.AppendLine(if errors = 0 then "\n🎉 Все изменения применены успешно." else $"\n⚠️ Ошибок: {errors}") |> ignore
                 let body = sb.ToString().Replace("'", "\\'")
                 let cmd = sprintf "gh issue comment %d --body '%s'" prNumber body
-
                 log "💬 Публикуем комментарий в PR..."
                 let (_, code) = runCommand cmd
+                if code = 0 then log "✅ Комментарий добавлен" else logError "❌ Не удалось добавить комментарий"
 
-                if code = 0 then
-                    log "✅ Комментарий добавлен"
-                else
-                    logError "❌ Не удалось добавить комментарий"
-
-    // === Вызов комментария, если были изменения ===
-    let totalChanges =
-        plan.Missing.Count
-        + plan.ToDeprecate.Count
-        + plan.ToDelete.Count
-        + plan.Outdated.Length
-
-    if totalChanges > 0 then
-        postPrComment ()
-
-    // === Завершаем с кодом ошибки ===
-    exit errors // ← это выражение завершает блок
-
-// ==============================================================================
-// 15. Запуск
-// ==============================================================================
+    let totalChanges = plan.Missing.Count + plan.ToDeprecate.Count + plan.ToDelete.Count + plan.Outdated.Length
+    if totalChanges > 0 then postPrComment ()
+    exit errors
 
 try
-    syncLabels () // уже делает exit
+    syncLabels ()
 with ex ->
     logError $"❌ Критическая ошибка: {ex.Message}"
     exit 1

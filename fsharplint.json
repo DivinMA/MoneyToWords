@@ -1,0 +1,23 @@
+{
+  "Naming": {
+    "Enabled": true,
+    "PascalCase": {
+      "MemberNames": true,
+      "ParameterNames": true
+    }
+  },
+  "Potential Bugs": {
+    "IncompletePatternMatch": { "Enabled": true },
+    "ShadowedVars": { "Enabled": true }
+  },
+  "Style": {
+    "MultipleWhitespace": { "Enabled": true },
+    "MaxLinesInFile": {
+      "Enabled": true,
+      "NumberOfLines": 500
+    }
+  },
+  "Documentation": {
+    "MissingSummary": { "Enabled": false }
+  }
+}

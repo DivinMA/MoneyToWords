@@ -22,6 +22,6 @@
   },
   "packageManager": "npm@11.8.0",
   "devDependencies": {
-    "husky": "^9.1.7"
+    "husky": "^8.0.0"
   }
 }

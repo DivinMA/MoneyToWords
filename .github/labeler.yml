@@ -1,21 +1,24 @@
-# 🔹 Версионирование
+# .github/labeler.yml
+# Автоматическое проставление меток
+# Основано на ветке и файлах
+# Единый источник правды — labels.json
 
+# 🔹 Версионирование
 "patch":
-  - head-branch: ["^hotfix/", "patch", "^fix/"]
+  - head-branch: ["^fix/", "^hotfix/", "^chore/", "^docs/", "^style/", "^refactor/", "patch"]
   - changed-files:
-      - any-glob-to-any-file: "docs/**/*"
       - any-glob-to-any-file: "**/*.md"
+      - any-glob-to-any-file: "docs/**/*"
 
 "minor":
   - head-branch: ["^feat/", "^feature/", "^enhancement/"]
 
 "major":
-  - head-branch: ["^breaking/", "major", "v2", "^remove/"]
+  - head-branch: ["^breaking/", "major", "^remove/", "v2"]
   - changed-files:
       - any-glob-to-any-file: "public-api.txt"
 
 # 🔹 Области кода
-
 "area:core":
   - changed-files:
       - any-glob-to-any-file: "src/MoneyToWords/**/*"
@@ -31,13 +34,18 @@
 "area:ci":
   - changed-files:
       - any-glob-to-any-file: ".github/workflows/**/*"
+      - any-glob-to-any-file: ".github/scripts/*.fsx"
+      - any-glob-to-any-file: "build.fsx"
+      - any-glob-to-any-file: "Directory.Build.props"
+      - any-glob-to-any-file: "dotnet-tools.json"
 
 "area:docs":
   - changed-files:
       - any-glob-to-any-file: "docs/**/*"
+      - any-glob-to-any-file: "README.md"
+      - any-glob-to-any-file: "CONTRIBUTING.md"
 
 # 🔹 Типы задач
-
 "type:feature":
   - head-branch: ["^feat/", "^feature/", "^enhancement/"]
   - changed-files:
@@ -47,13 +55,14 @@
   - head-branch: ["^fix/", "bugfix", "^hotfix/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*.fs"
+      - any-glob-to-any-file: "src/**/*.fsx"
       - any-glob-to-any-file: "tests/**/*"
 
 "type:docs":
+  - head-branch: ["^docs/"]
   - changed-files:
       - any-glob-to-any-file: "docs/**/*"
       - any-glob-to-any-file: "**/*.md"
-  - head-branch: ["^docs/", "readme"]
 
 "type:refactor":
   - head-branch: ["^refactor/", "cleanup"]
@@ -61,9 +70,11 @@
       - any-glob-to-any-file: "src/**/*"
 
 "type:chore":
-  - head-branch: ["^chore/", "maintenance"]
+  - head-branch: ["^chore/", "maintenance", "^ci/", "^pipeline/", "^workflow/"]
   - changed-files:
       - any-glob-to-any-file: "build.fsx"
+      - any-glob-to-any-file: "paket.*"
+      - any-glob-to-any-file: "dotnet-tools.json"
       - any-glob-to-any-file: "Directory.Build.props"
 
 "type:test":
@@ -72,12 +83,12 @@
       - any-glob-to-any-file: "**/*Tests*.fs"
 
 "type:ci":
+  - head-branch: ["^ci/", "^pipeline/", "^workflow/"]
   - changed-files:
       - any-glob-to-any-file: ".github/workflows/**/*"
-  - head-branch: ["^ci/", "pipeline"]
+      - any-glob-to-any-file: ".github/scripts/*.fsx"
 
 # 🔹 Приоритеты
-
 "priority:critical":
   - head-branch: ["^urgent/", "critical", "P0"]
 
@@ -85,7 +96,6 @@
   - head-branch: ["^important/", "high", "P1"]
 
 # 🔹 Статус PR
-
 "draft":
   - head-branch: ["^wip/", "^draft/", "in-progress"]
 
