@@ -35,9 +35,11 @@
   - changed-files:
       - any-glob-to-any-file: ".github/workflows/**/*"
       - any-glob-to-any-file: ".github/scripts/*.fsx"
-      - any-glob-to-any-file: "build.fsx"
+      - any-glob-to-any-file: ".github/config/labels.json"
+      - any-glob-to-any-file: "package.json"
       - any-glob-to-any-file: "Directory.Build.props"
       - any-glob-to-any-file: "dotnet-tools.json"
+      - any-glob-to-any-file: "build.fsx"  # если появится — покрыто
 
 "area:docs":
   - changed-files:
@@ -76,6 +78,9 @@
       - any-glob-to-any-file: "paket.*"
       - any-glob-to-any-file: "dotnet-tools.json"
       - any-glob-to-any-file: "Directory.Build.props"
+      - any-glob-to-any-file: ".github/scripts/*.fsx"
+      - any-glob-to-any-file: ".github/config/labels.json"
+      - any-glob-to-any-file: "package.json"
 
 "type:test":
   - changed-files:
