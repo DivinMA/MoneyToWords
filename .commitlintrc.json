@@ -18,7 +18,7 @@
         "revert"
       ]
     ],
-    "scope-empty": [ 2, "never" ],
+    "scope-empty": [ 0 ],
     "subject-case": [ 0 ],
     "subject-empty": [ 2, "never" ],
     "subject-full-stop": [ 0, "never" ],
