@@ -259,10 +259,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: 📦 Restore tools and packages
+      - name: 📦 Restore tools
         run: |
           dotnet tool restore
-          dotnet paket restore
+
+      # ✅ ДОБАВЬ ЭТОТ БЛОК
+      - name: 🔤 Lint commit messages
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.json
+          failOnWarnings: false
+          helpUrl: https://www.conventionalcommits.org
 
       - name: 🧹 Lint F# scripts
         run: |
