@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, staging]
+    branches: [main]
   push:
-    branches: [main, staging]
+    branches: [staging]
 
 jobs:
   # ===================================================================
@@ -26,24 +26,7 @@ jobs:
         with:
           fetch-depth: 0  # Критично для MinVer
 
-      # DEBUG: Диагностика .git и тегов — можно удалить после настройки
-      - name: "🧪 DEBUG: Check git and tags (safe to remove later)"
-        run: |
-          echo "🔍 Git directory:"
-          ls -la .git || echo "❌ .git not found"
-          
-          echo "📡 Fetching all tags..."
-          git fetch --prune --tags --verbose
-          
-          echo "📦 Available tags (latest 10):"
-          git tag --list --sort=-version:refname | head -10
-          
-          if git tag --list | grep -q "^v1\.2\.0$"; then
-            echo "✅ Tag v1.2.0 is present"
-          else
-            echo "❌ Tag v1.2.0 is MISSING — MinVer may fallback to 1.1.0"
-          fi
-        # DEBUG: Удалить после подтверждения стабильности
+
 
       - name: ⚙️ Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v5
