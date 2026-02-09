@@ -1,39 +1,18 @@
-# .github/labeler.yml
-# Важно: порядок имеет значение — первое совпадение побеждает
-
-<<<<<<< HEAD
-# 🔹 Версионирование — только по src/ изменениям
-"patch":
-=======
-# .github/labeler.yml
-
-# 🔹 Версионирование — только по src/ изменениям
 "version:patch":
->>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
   - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*.fs"
 
-<<<<<<< HEAD
-"minor":
-=======
 "version:minor":
->>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
   - head-branch: ["^feat/", "^feature/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*"
 
-<<<<<<< HEAD
-"major":
-  - head-branch: ["^breaking/", "major", "^remove/"]
-=======
 "version:major":
   - head-branch: ["^breaking/", "^remove/", "major"]
->>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
   - changed-files:
       - any-glob-to-any-file: "public-api.txt"
-  
-# 🔹 Области кода
+
 "area:core":
   - changed-files:
       - any-glob-to-any-file: "src/MoneyToWords/**/*"
@@ -59,7 +38,6 @@
       - any-glob-to-any-file: "README.md"
       - any-glob-to-any-file: "CONTRIBUTING.md"
 
-# 🔹 Типы задач — только одно!
 "type:bug":
   - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
@@ -96,17 +74,3 @@
   - head-branch: ["^ci/"]
   - changed-files:
       - any-glob-to-any-file: ".github/workflows/**/*"
-
-# 🔹 Приоритеты
-"priority:critical":
-  - head-branch: ["^urgent/", "critical", "P0"]
-
-"priority:high":
-  - head-branch: ["^important/", "high", "P1"]
-
-# 🔹 Статус PR
-"draft":
-  - head-branch: ["^wip/", "^draft/", "in-progress"]
-
-"ready-for-review":
-  - head-branch: ["^pr/", "^review/", "rfc"]
