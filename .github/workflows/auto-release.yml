@@ -33,10 +33,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: 🧹 Remove packages.lock.json (workaround)
-        run: |
-          find . -name "packages.lock.json" -type f -delete || true
-
       - name: 🔧 Restore dependencies
         run: dotnet restore --force-evaluate
 

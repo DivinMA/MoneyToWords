@@ -52,7 +52,7 @@
         <NoWarn>$(NoWarn);1591;1592;1594;1595;1573;NU1603</NoWarn>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
-        <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <TreatWarningsAsErrors Condition="'$(GITHUB_ACTIONS)' == 'true'">true</TreatWarningsAsErrors>
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
