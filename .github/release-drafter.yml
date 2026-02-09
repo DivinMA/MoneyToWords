@@ -28,6 +28,7 @@ version-resolver:
   patch: { labels: [ version:patch, 'type:bug', fix, 'type:docs', docs, 'type:chore', 'type:refactor', ci ] }
   default: patch
 
+
 change-template: '- $TITLE (#$NUMBER)'
 template: |
   ## What's Changed
