@@ -1,22 +1,24 @@
 # .github/labeler.yml
 # Важно: порядок имеет значение — первое совпадение побеждает
 
+# .github/labeler.yml
+
 # 🔹 Версионирование — только по src/ изменениям
-"patch":
+"version:patch":
   - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*.fs"
 
-"minor":
+"version:minor":
   - head-branch: ["^feat/", "^feature/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*"
 
-"major":
-  - head-branch: ["^breaking/", "major", "^remove/"]
+"version:major":
+  - head-branch: ["^breaking/", "^remove/", "major"]
   - changed-files:
       - any-glob-to-any-file: "public-api.txt"
-
+  
 # 🔹 Области кода
 "area:core":
   - changed-files:

@@ -23,9 +23,9 @@ exclude-labels:
   - draft
 
 version-resolver:
-  major: { labels: [ major, breaking, 'backwards-incompatible' ] }
-  minor: { labels: [ 'type:feature', feat, enhancement ] }
-  patch: { labels: [ 'type:bug', fix, 'type:docs', docs, 'type:chore', 'type:refactor', ci ] }
+  major: { labels: [ version:major, breaking, 'backwards-incompatible' ] }
+  minor: { labels: [ version:minor, 'type:feature', feat, enhancement ] }
+  patch: { labels: [ version:patch, 'type:bug', fix, 'type:docs', docs, 'type:chore', 'type:refactor', ci ] }
   default: patch
 
 change-template: '- $TITLE (#$NUMBER)'
