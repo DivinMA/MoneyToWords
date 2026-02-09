@@ -1,5 +1,3 @@
-# .github/labeler.yml
-
 "version:patch":
   - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
