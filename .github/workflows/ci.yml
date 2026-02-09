@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: CI
 
 on:
@@ -7,9 +8,6 @@ on:
     branches: [staging]
 
 jobs:
-  # ===================================================================
-  # ЕДИНЫЙ JOB: Build + Test + Pack Validation
-  # ===================================================================
   ci:
     runs-on: ubuntu-latest
     permissions:
@@ -24,7 +22,7 @@ jobs:
       - name: 🔁 Checkout code
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Критично для MinVer
+          fetch-depth: 0
 
       - name: ⚙️ Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v5
@@ -32,16 +30,8 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
           cache: false
 
-      - name: 🧹 Pre-clean FSharp.Core to prevent NU1403
-        run: |
-          echo "🧹 Removing FSharp.Core from NuGet cache to avoid hash mismatch"
-          rm -rf ~/.nuget/packages/fsharp.core
-
-      - name: 🔧 Restore dependencies with lock file
-        run: |
-          echo "📦 Restoring main and test projects with --use-lock-file --locked-mode"
-          dotnet restore src/MoneyToWords/MoneyToWords.fsproj --use-lock-file --locked-mode
-          dotnet restore tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --use-lock-file --locked-mode
+      - name: 🔚 Shutdown build server
+        run: dotnet build-server shutdown || true
 
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
@@ -51,6 +41,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: 🧹 Pre-clean FSharp.Core after cache
+        run: |
+          echo "🧹 Removing FSharp.Core from NuGet cache"
+          rm -rf ~/.nuget/packages/fsharp.core
+
+      - name: 🔧 Restore dependencies with lock file
+        run: |
+          echo "📦 Restoring main and test projects"
+          dotnet restore src/MoneyToWords/MoneyToWords.fsproj --use-lock-file --locked-mode
+          dotnet restore tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --use-lock-file --locked-mode
+
+      # ... остальные шаги без изменений ...
       - name: 🔨 Build library
         run: |
           echo "🔨 Building MoneyToWords..."
