@@ -47,8 +47,9 @@ jobs:
 
       - name: 🔧 Restore dependencies with lock file
         run: |
-          echo "📦 Restoring with --use-lock-file --locked-mode"
-          dotnet restore --use-lock-file --locked-mode
+          echo "📦 Restoring main and test projects with --use-lock-file --locked-mode"
+          dotnet restore src/MoneyToWords/MoneyToWords.fsproj --use-lock-file --locked-mode
+          dotnet restore tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --use-lock-file --locked-mode
 
       - name: 🔨 Build library
         run: |
