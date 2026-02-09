@@ -10,24 +10,23 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-
-    strategy:
-      matrix:
-        dotnet-version: ['10.0.x']
-
     steps:
       - name: 🔁 Checkout code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: ⚙️ Setup .NET ${{ matrix.dotnet-version }}
+      - name: 🚫 Hide examples to prevent auto restore
+        run: |
+          if [ -d "examples" ]; then
+            echo "🚫 Moving examples/ to examples.tmp"
+            mv examples examples.tmp
+          fi
+
+      - name: ⚙️ Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: '10.0.x'
           cache: false
 
       - name: 🔚 Shutdown build server
@@ -52,7 +51,14 @@ jobs:
           dotnet restore src/MoneyToWords/MoneyToWords.fsproj --use-lock-file --locked-mode
           dotnet restore tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --use-lock-file --locked-mode
 
-      # ... остальные шаги без изменений ...
+      - name: ✅ Restore examples/
+        if: always()
+        run: |
+          if [ -d "examples.tmp" ]; then
+            echo "✅ Moving examples.tmp back"
+            mv examples.tmp examples
+          fi
+
       - name: 🔨 Build library
         run: |
           echo "🔨 Building MoneyToWords..."
