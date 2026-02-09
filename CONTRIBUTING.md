@@ -16,10 +16,10 @@
 |------|------|--------|-------------------|
 | `changes-requested` | <code style="background:#D93F0B; color:white">  </code> | Changes requested | ❌ Нет |
 | `draft` | <code style="background:#6A737D; color:white">  </code> | Work in progress | ❌ Нет |
-| `major` | <code style="background:#B60205; color:white">  </code> | Major breaking change | ✅ Да (major) |
-| `minor` | <code style="background:#79B8FF; color:white">  </code> | Minor release | ✅ Да (minor) |
-| `patch` | <code style="background:#22863A; color:white">  </code> | Patch release | ✅ Да (patch) |
 | `ready-for-review` | <code style="background:#2188FF; color:white">  </code> | Ready for review | ❌ Нет |
+| `version:major` | <code style="background:#B60205; color:white">  </code> | Major breaking change (automated) | ✅ Да (major) |
+| `version:minor` | <code style="background:#79B8FF; color:white">  </code> | Minor release (automated) | ✅ Да (minor) |
+| `version:patch` | <code style="background:#22863A; color:white">  </code> | Patch release (automated) | ✅ Да (patch) |
 
 ---
 
@@ -110,38 +110,12 @@
 dotnet list package | grep MoneyToWordsFSharpLib
 ```
 
-� Создание Personal Access Token (PAT)
-
-Иногда создание Fine‑grained PAT доступно не напрямую через UI или ссылка `https://github.com/settings/tokens` может возвращать 404 (ограничение организации или GitHub Enterprise). Рекомендуемая последовательность:
-
-- Перейдите: `Settings → Developer settings → Personal access tokens` или откройте напрямую `https://github.com/settings/tokens/new`.
-- Если страница возвращает 404: попробуйте открыть в режиме инкогнито / другом браузере, проверьте, что вы в нужном аккаунте, либо свяжитесь с администратором организации/Enterprise (возможно, создание PAT ограничено).
-- Выберите **Fine‑grained** (если доступно) или **Classic** и задайте минимальные права и срок действия.
-- Скопируйте токен сразу и добавьте его в секреты репозитория: `Settings → Secrets and variables → Actions → New repository secret`.
-- Через CLI: `gh secret set GH_TOKEN -b"$TOKEN" -R DivinMA/MoneyToWords`.
-
-Если возникнут вопросы — могу добавить подробную инструкцию или примеры в `CONTRIBUTING.md`.
-
-�🔄 Автоматизация
+🔄 Автоматизация
 Лейблы ставятся автоматически по ветке и файлам.
 Не нужно вручную ставить feature, area:core и т.д.
 CI проверяет, что есть patch/minor/major.
 
 Если возникнут вопросы — см. задачу [#11: Настройка автоматизации](https://github.com/DivinMA/MoneyToWords/issues/11)
-
----
-
-## 🔁 Релизы и публикация
-
-- Управление релизами автоматизировано и основано на метках PR и Release Drafter.
-  - **Лейблы** `major`, `minor`, `patch` определяют семантические изменения версии (используется MinVer).
-  - **Release Drafter** собирает заметки релиза и формирует Draft Release при пушах в `main`.
-  - **Auto Release**: при пуше в `main` CI вычисляет версию (MinVer) и публикует релиз, создавая тег `v<version>` при необходимости.
-  - **Публикация на NuGet**: релиз автоматически упаковывается и публикуется на NuGet.org (workflow `publish.yml`). Для публикации необходимо настроить `NUGET_API_KEY` в Secrets репозитория.
-
-- Рекомендуемая практика для чистой истории: используйте squash-мерджи для PR в `main` (включите соответствующее правило в настройках репозитория). Это делает историю линейной, помогает MinVer правильно определять версии и упрощает CHANGELOG.
-
-- CHANGELOG.md: Release Drafter формирует заметки релизов; если нужно, могу добавить автоматическое обновление файла `CHANGELOG.md` в репозитории при релизе (создавать PR с обновлённым changelog).
 
 ---
 > ⚙️ ⚙️ Сгенерировано автоматически • система документации

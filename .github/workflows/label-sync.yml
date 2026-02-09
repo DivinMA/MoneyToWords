@@ -1,38 +1,23 @@
-name: "Label Sync"
+name: Sync Labels
 
 on:
   schedule:
-    - cron: '0 4 * * mon'  # weekly on Monday 04:00 UTC
-  workflow_dispatch: {}
+    - cron: '0 4 * * mon'
+  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  sync-labels:
+  sync:
     runs-on: ubuntu-latest
     permissions:
       issues: write
       contents: read
-
     steps:
-      - name: 🔁 Checkout
-        uses: actions/checkout@v6
-
-      - name: ⚙️ Setup .NET
-        uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
-
-      - name: 🔐 Setup GitHub CLI
-        run: |
-          echo "🔐 Using GH_TOKEN"
-          gh auth status
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🔄 Run sync-labels
-        run: |
-          echo "🔍 Running labels sync..."
-          dotnet fsi .github/scripts/sync-labels.fsx --apply
+      - run: dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

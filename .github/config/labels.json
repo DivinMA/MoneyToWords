@@ -1,24 +1,24 @@
 [
   {
-    "name": "patch",
+    "name": "version:patch",
     "color": "22863A",
-    "description": "Patch release",
+    "description": "Patch release (automated)",
     "group": "behavioral",
     "inRelease": true,
     "versionEffect": "patch"
   },
   {
-    "name": "minor",
+    "name": "version:minor",
     "color": "79B8FF",
-    "description": "Minor release",
+    "description": "Minor release (automated)",
     "group": "behavioral",
     "inRelease": true,
     "versionEffect": "minor"
   },
   {
-    "name": "major",
+    "name": "version:major",
     "color": "B60205",
-    "description": "Major breaking change",
+    "description": "Major breaking change (automated)",
     "group": "behavioral",
     "inRelease": true,
     "versionEffect": "major"

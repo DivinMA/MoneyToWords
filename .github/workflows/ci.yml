@@ -8,6 +8,7 @@ on:
     branches: [staging]
 
 jobs:
+<<<<<<< HEAD
   ci:
     runs-on: ubuntu-latest
     steps:
@@ -279,6 +280,12 @@ jobs:
 
     steps:
       - name: 🔁 Checkout repository
+=======
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔁 Checkout
+>>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -288,36 +295,67 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+<<<<<<< HEAD
       - name: 🧹 Pre-clean FSharp.Core (fix NU1403)
         run: |
           echo "🧹 Cleaning FSharp.Core from cache"
           rm -rf ~/.nuget/packages/fsharp.core
+=======
+      - name: 🔚 Shutdown build server
+        run: dotnet build-server shutdown || true
+>>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
 
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
+<<<<<<< HEAD
       - name: 🔧 Restore and Build
         run: |
           echo "📦 Restoring with lock file"
           dotnet restore --use-lock-file --locked-mode
+=======
+      - name: 🧹 Pre-clean FSharp.Core
+        run: |
+          echo "🧹 Cleaning FSharp.Core to avoid NU1403"
+          rm -rf ~/.nuget/packages/fsharp.core
+
+      - name: 🔧 Restore with lock file
+        run: |
+          dotnet restore --use-lock-file --locked-mode
+
+      - name: 🔨 Build
+        run: |
+>>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
-            /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords \
-            /bl:build.binlog
+            --no-incremental \
+            --no-restore
 
-      - name: 📦 Pack with MinVer
-        id: pack
+      - name: 🎨 Check format
         run: |
-          dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
-            --configuration Release \
-            --output ./artifacts \
-            /p:IncludeSymbols=true \
-            /p:SymbolPackageFormat=snupkg \
-            /p:ContinuousIntegrationBuild=true
+          dotnet tool install --global dotnet-format || dotnet tool update --global dotnet-format
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          dotnet format --verify-no-changes
 
+      - name: 🔎 F# Lint
+        run: |
+          dotnet tool install --global dotnet-fsharplint || dotnet tool update --global dotnet-fsharplint
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          dotnet fsharplint lint src/MoneyToWords/MoneyToWords.fsproj
+
+      - name: 🧪 Test
+        run: |
+          dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
+            --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings
+
+<<<<<<< HEAD
       - name: ✅ Verify package version
         run: |
           echo "📦 Final version:"
@@ -334,6 +372,11 @@ jobs:
 
       - name: Attach package to GitHub Release
         uses: softprops/action-gh-release@v2
+=======
+      - name: 📊 Upload coverage
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v4
+>>>>>>> 016eed96dc2f84d171c60b74df80c7bba6088c82
         with:
-          files: ./artifacts/*.nupkg
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./TestResults/coverage.cobertura.xml
