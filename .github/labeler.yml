@@ -1,20 +1,19 @@
 # .github/labeler.yml
-# Автоматическое проставление меток
-# Основано на ветке и файлах
-# Единый источник правды — labels.json
+# Важно: порядок имеет значение — первое совпадение побеждает
 
-# 🔹 Версионирование
+# 🔹 Версионирование — только по src/ изменениям
 "patch":
-  - head-branch: ["^fix/", "^hotfix/", "^chore/", "^docs/", "^style/", "^refactor/", "patch"]
+  - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
-      - any-glob-to-any-file: "**/*.md"
-      - any-glob-to-any-file: "docs/**/*"
+      - any-glob-to-any-file: "src/**/*.fs"
 
 "minor":
-  - head-branch: ["^feat/", "^feature/", "^enhancement/"]
+  - head-branch: ["^feat/", "^feature/"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*"
 
 "major":
-  - head-branch: ["^breaking/", "major", "^remove/", "v2"]
+  - head-branch: ["^breaking/", "major", "^remove/"]
   - changed-files:
       - any-glob-to-any-file: "public-api.txt"
 
@@ -35,11 +34,8 @@
   - changed-files:
       - any-glob-to-any-file: ".github/workflows/**/*"
       - any-glob-to-any-file: ".github/scripts/*.fsx"
-      - any-glob-to-any-file: ".github/config/labels.json"
-      - any-glob-to-any-file: "package.json"
       - any-glob-to-any-file: "Directory.Build.props"
       - any-glob-to-any-file: "dotnet-tools.json"
-      - any-glob-to-any-file: "build.fsx"  # если появится — покрыто
 
 "area:docs":
   - changed-files:
@@ -47,51 +43,43 @@
       - any-glob-to-any-file: "README.md"
       - any-glob-to-any-file: "CONTRIBUTING.md"
 
-# 🔹 Типы задач
-"type:feature":
-  - head-branch: ["^feat/", "^feature/", "^enhancement/"]
+# 🔹 Типы задач — только одно!
+"type:bug":
+  - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*"
 
-"type:bug":
-  - head-branch: ["^fix/", "bugfix", "^hotfix/"]
+"type:feature":
+  - head-branch: ["^feat/", "^feature/"]
   - changed-files:
-      - any-glob-to-any-file: "src/**/*.fs"
-      - any-glob-to-any-file: "src/**/*.fsx"
-      - any-glob-to-any-file: "tests/**/*"
+      - any-glob-to-any-file: "src/**/*"
 
 "type:docs":
   - head-branch: ["^docs/"]
   - changed-files:
-      - any-glob-to-any-file: "docs/**/*"
       - any-glob-to-any-file: "**/*.md"
+      - any-glob-to-any-file: "docs/**/*"
 
 "type:refactor":
-  - head-branch: ["^refactor/", "cleanup"]
+  - head-branch: ["^refactor/"]
   - changed-files:
       - any-glob-to-any-file: "src/**/*"
 
 "type:chore":
-  - head-branch: ["^chore/", "maintenance", "^pipeline/", "^workflow/"]
+  - head-branch: ["^chore/"]
   - changed-files:
-      - any-glob-to-any-file: "build.fsx"
-      - any-glob-to-any-file: "paket.*"
-      - any-glob-to-any-file: "dotnet-tools.json"
       - any-glob-to-any-file: "Directory.Build.props"
       - any-glob-to-any-file: ".github/scripts/*.fsx"
-      - any-glob-to-any-file: ".github/config/labels.json"
-      - any-glob-to-any-file: "package.json"
+      - any-glob-to-any-file: "dotnet-tools.json"
 
 "type:test":
   - changed-files:
       - any-glob-to-any-file: "tests/**/*"
-      - any-glob-to-any-file: "**/*Tests*.fs"
 
 "type:ci":
   - head-branch: ["^ci/"]
   - changed-files:
       - any-glob-to-any-file: ".github/workflows/**/*"
-      - any-glob-to-any-file: ".github/scripts/*.fsx"
 
 # 🔹 Приоритеты
 "priority:critical":
