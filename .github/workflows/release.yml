@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: 🔁 Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 🔚 Shutdown build server
+        run: dotnet build-server shutdown || true
+
+      - name: 💾 Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+
+      - name: 🧹 Pre-clean FSharp.Core
+        run: |
+          rm -rf ~/.nuget/packages/fsharp.core
+
+      - name: 🔧 Restore
+        run: dotnet restore --use-lock-file --locked-mode
+
+      - name: 🏷️ Resolve version
+        id: version
+        run: |
+          VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj | tr -d '\r')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: 🔨 Build & Pack
+        run: |
+          dotnet build src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-incremental \
+            --no-restore
+
+          dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts
+
+      - name: 📦 Publish to NuGet
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --skip-duplicate
+
+      - name: 📂 Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.repository.releases[0].upload_url }}
+          asset_path: ./artifacts/MoneyToWordsFSharpLib.${{ steps.version.outputs.version }}.nupkg
+          asset_name: MoneyToWordsFSharpLib.${{ steps.version.outputs.version }}.nupkg
+          asset_content_type: application/octet-stream

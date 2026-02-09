@@ -3,21 +3,25 @@
 # Основано на ветке и файлах
 # Единый источник правды — labels.json
 
-# 🔹 Версионирование
-"patch":
-  - head-branch: ["^fix/", "^hotfix/", "^chore/", "^docs/", "^style/", "^refactor/", "patch"]
+# .github/labeler.yml
+
+# 🔹 Версионирование — только по src/ изменениям
+"version:patch":
+  - head-branch: ["^fix/", "^hotfix/"]
   - changed-files:
       - any-glob-to-any-file: "**/*.md"
       - any-glob-to-any-file: "docs/**/*"
 
-"minor":
-  - head-branch: ["^feat/", "^feature/", "^enhancement/"]
+"version:minor":
+  - head-branch: ["^feat/", "^feature/"]
+  - changed-files:
+      - any-glob-to-any-file: "src/**/*"
 
-"major":
-  - head-branch: ["^breaking/", "major", "^remove/", "v2"]
+"version:major":
+  - head-branch: ["^breaking/", "^remove/", "major"]
   - changed-files:
       - any-glob-to-any-file: "public-api.txt"
-
+  
 # 🔹 Области кода
 "area:core":
   - changed-files:
