@@ -5,6 +5,8 @@
 
 # .github/labeler.yml
 
+# .github/labeler.yml
+
 # 🔹 Версионирование — только по src/ изменениям
 "version:patch":
   - head-branch: ["^fix/", "^hotfix/"]
