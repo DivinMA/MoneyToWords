@@ -26,13 +26,16 @@ jobs:
         with:
           fetch-depth: 0  # Критично для MinVer
 
-
-
       - name: ⚙️ Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
           cache: false
+
+      - name: 🧹 Pre-clean FSharp.Core to prevent NU1403
+        run: |
+          echo "🧹 Removing FSharp.Core from NuGet cache to avoid hash mismatch"
+          rm -rf ~/.nuget/packages/fsharp.core
 
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
@@ -42,10 +45,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: 🔧 Restore dependencies
+      - name: 🔧 Restore dependencies with lock file
         run: |
-          echo "📦 Running dotnet restore"
-          dotnet restore --force-evaluate
+          echo "📦 Restoring with --use-lock-file --locked-mode"
+          dotnet restore --use-lock-file --locked-mode
 
       - name: 🔨 Build library
         run: |
@@ -58,9 +61,8 @@ jobs:
       - name: 🎨 Check code format
         run: |
           echo "🔍 Verifying code formatting (dotnet format)"
-          # Ensure dotnet-format is available
           if ! command -v dotnet-format >/dev/null 2>&1; then
-            echo "⚠️ dotnet-format not found, attempting to install..."
+            echo "⚠️ Installing dotnet-format..."
             dotnet tool install --global dotnet-format || dotnet tool update --global dotnet-format
             export PATH="$HOME/.dotnet/tools:$PATH"
           fi
@@ -76,13 +78,11 @@ jobs:
 
       - name: 🔎 F# Lint (FSharpLint)
         run: |
-          echo "🔍 Installing and running F# lint (dotnet-fsharplint)"
+          echo "🔍 Installing and running F# lint"
           dotnet tool install --global dotnet-fsharplint || dotnet tool update --global dotnet-fsharplint
           export PATH="$HOME/.dotnet/tools:$PATH"
           mkdir -p TestResults
-          # Produce msbuild-style output and save as artifact
           dotnet-fsharplint lint --format msbuild --file-type project src/MoneyToWords/MoneyToWords.fsproj > TestResults/fsharplint.msbuild || true
-          # Also run standard lint to fail on issues
           dotnet-fsharplint lint --file-type project src/MoneyToWords/MoneyToWords.fsproj
 
       - name: 📄 Upload fsharplint report
@@ -92,49 +92,40 @@ jobs:
           name: fsharplint-report
           path: TestResults/fsharplint.msbuild
 
-      - name: 🔄 Convert fsharplint report to SARIF and upload to Code Scanning
+      - name: 🔄 Convert fsharplint report to SARIF
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🔧 Attempting to convert fsharplint msbuild report to SARIF"
-          export PATH="$HOME/.dotnet/tools:$PATH"
-          # Install Sarif.Multitool if possible
+          echo "🔧 Converting fsharplint report to SARIF"
           dotnet tool install --global Sarif.Multitool || dotnet tool update --global Sarif.Multitool || true
           export PATH="$HOME/.dotnet/tools:$PATH"
           SARIF_OUT=TestResults/fsharplint.sarif
 
-          # Prefer 'convert' if available, otherwise try 'transform'; quiet errors to reduce log noise
           if sarif --help 2>/dev/null | grep -q "convert"; then
-            sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT 2>/dev/null || sarif convert TestResults/fsharplint.msbuild $SARIF_OUT 2>/dev/null || true
+            sarif convert --input TestResults/fsharplint.msbuild --output $SARIF_OUT 2>/dev/null || true
           elif sarif --help 2>/dev/null | grep -q "transform"; then
             sarif transform TestResults/fsharplint.msbuild $SARIF_OUT 2>/dev/null || true
           else
-            echo "⚠️ 'sarif' tool doesn't support convert/transform; skipping SARIF conversion"
+            echo "⚠️ 'sarif' tool not available; skipping"
           fi
 
           if [ -f "$SARIF_OUT" ]; then
-            echo "✅ SARIF created: $SARIF_OUT"
-            echo "📤 Uploading SARIF to GitHub Code Scanning API"
-            # Prepare JSON payload with sarif content
-            SARIF_CONTENT=$(python -c "import json,sys; print(json.dumps(open('"$SARIF_OUT"','r').read()))")
-            DATA=$(printf '{"commit_sha":"%s","ref":"%s","sarif": %s}' "${{ github.sha }}" "${{ github.ref }}" "$SARIF_CONTENT")
+            echo "📤 Uploading SARIF to Code Scanning"
+            SARIF_CONTENT=$(python -c "import json; print(json.dumps(open('$SARIF_OUT', 'r').read()))")
+            DATA=$(printf '{"commit_sha":"%s","ref":"%s","sarif":%s}' "${{ github.sha }}" "${{ github.ref }}" "$SARIF_CONTENT")
             curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$DATA" "https://api.github.com/repos/${{ github.repository }}/code-scanning/sarifs" || true
-          else
-            echo "⚠️ SARIF file not generated; skipping upload"
           fi
 
       - name: 🔐 Check for vulnerable packages
         run: |
           echo "🔍 Checking for vulnerable packages"
-          # Запускаем с || true — чтобы не падало при exit code 1
           dotnet list package --vulnerable > vulnerabilities.txt 2>&1 || true
 
-          # Проверяем содержимое файла
           if grep -q "No vulnerable packages were found\|has no vulnerable packages" vulnerabilities.txt; then
-            echo "✅ No vulnerable packages found"
+            echo "✅ No known vulnerabilities"
           elif grep -q "error" vulnerabilities.txt; then
-            echo "❌ Error during vulnerability check:"
+            echo "❌ Error in vulnerability check:"
             cat vulnerabilities.txt
             exit 1
           elif [ -s vulnerabilities.txt ]; then
@@ -142,13 +133,12 @@ jobs:
             cat vulnerabilities.txt
             exit 1
           else
-            echo "⚠️ Empty output — skipping vulnerability check"
+            echo "⚠️ Empty output — skipping"
           fi
 
-      # Уверенность, что MinVer сработал — по выводу из сборки
       - name: 🏷️ Log resolved version (MinVer)
         run: |
-          echo "🔍 Building to trigger MinVer..."
+          echo "🔍 Triggering MinVer..."
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-incremental \
@@ -156,22 +146,22 @@ jobs:
             /p:GeneratePackageOnBuild=false
 
           VERSION=$(dotnet msbuild -nologo -getProperty:PackageVersion src/MoneyToWords/MoneyToWords.fsproj)
-          echo "📦 Final PackageVersion: $VERSION"
+          echo "📦 Version: $VERSION"
           echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: 🧪 Run TextOutput tests (isolated)
+      - name: 🧪 Run TextOutput tests
         run: |
-          echo "🧪 Running TextOutput unit tests (isolated)"
+          echo "🧪 Running TextOutput tests"
           mkdir -p TestResults
           dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --filter "FullyQualifiedName~TextOutput" --logger "trx;LogFileName=${{ github.workspace }}/TestResults/textoutput.trx"
 
       - name: 🧪 Run tests & collect coverage
         run: |
-          echo "🧪 Running tests..."
+          echo "🧪 Running all tests"
           mkdir -p TestResults
           dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj --configuration Release --verbosity normal --logger "trx;LogFileName=${{ github.workspace }}/TestResults/results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=${{ github.workspace }}/TestResults/coverage.cobertura.xml /p:Threshold=85 /p:ThresholdType=line /p:ThresholdStat=total
 
-      - name: 📤 Upload test results (if failed)
+      - name: 📤 Upload test results (on failure)
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v6
         with:
@@ -179,7 +169,7 @@ jobs:
           path: TestResults/results.trx
           retention-days: 5
 
-      - name: 📊 Upload coverage to Codecov (optional)
+      - name: 📊 Upload coverage to Codecov
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         if: github.event_name == 'pull_request' && env.CODECOV_TOKEN != ''
@@ -188,13 +178,13 @@ jobs:
           token: ${{ env.CODECOV_TOKEN }}
           files: TestResults/coverage.cobertura.xml
           flags: unittests
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
       - name: 📦 Validate package (PR only)
         if: github.event_name == 'pull_request'
         run: |
-          echo "📦 Validating package structure"
+          echo "📦 Validating package"
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-build \
@@ -204,9 +194,7 @@ jobs:
             /p:ContinuousIntegrationBuild=true \
             /p:NoWarn=NU5128
 
-          echo "🔖 Final PackageVersion:"
           dotnet msbuild -nologo -getProperty:PackageVersion /p:DesignTimeBuild=true src/MoneyToWords/MoneyToWords.fsproj
-
           ls -la ./artifacts/
 
       - name: 📤 Upload validated package
@@ -248,14 +236,14 @@ jobs:
 
       - name: 🔐 Setup GitHub CLI
         run: |
-          echo "🔐 Using GH_TOKEN for gh CLI"
+          echo "🔐 Using GH_TOKEN"
           gh auth status
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: 🔄 Run sync-labels.fsx
         run: |
-          echo "🔁 Running sync-labels.fsx..."
+          echo "🔁 Running sync-labels..."
           dotnet fsi .github/scripts/sync-labels.fsx --apply
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -291,25 +279,21 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: 🧹 Pre-clean FSharp.Core (fix NU1403)
+        run: |
+          echo "🧹 Cleaning FSharp.Core from cache"
+          rm -rf ~/.nuget/packages/fsharp.core
+
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
 
-      - name: 🧹 Remove packages.lock.json
-        run: |
-          find . -name "packages.lock.json" -type f -delete || true
-
-      - name: 🛰️ Fetch all tags
-        run: |
-          git fetch --prune --tags
-          echo "📦 Tags available:"
-          git tag --list --sort=-version:refname | head -10
-
       - name: 🔧 Restore and Build
         run: |
-          dotnet restore --force-evaluate
+          echo "📦 Restoring with lock file"
+          dotnet restore --use-lock-file --locked-mode
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             /p:RepositoryUrl=https://github.com/DivinMA/MoneyToWords \
@@ -325,7 +309,7 @@ jobs:
             /p:SymbolPackageFormat=snupkg \
             /p:ContinuousIntegrationBuild=true
 
-      - name: ✅ Verify package version and contents
+      - name: ✅ Verify package version
         run: |
           echo "📦 Final version:"
           dotnet msbuild -nologo -getProperty:PackageVersion
