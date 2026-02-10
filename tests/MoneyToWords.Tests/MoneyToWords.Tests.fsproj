@@ -38,8 +38,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Ссылка на основную библиотеку -->
-        <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
+      <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
     </ItemGroup>
 
     <ItemGroup>

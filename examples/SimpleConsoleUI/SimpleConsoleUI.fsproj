@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
+      <ProjectReference Include="..\..\src\MoneyToWords\MoneyToWords.fsproj" />
     </ItemGroup>
 
 </Project>
