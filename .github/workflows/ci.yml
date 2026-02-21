@@ -42,6 +42,9 @@ jobs:
           echo "🧹 Ensuring NuGetFallbackFolder is not used"
           echo "DOTNET_ROLL_FORWARD=LatestPatch" >> $GITHUB_ENV
           echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
+        env:
+          DOTNET_ROLL_FORWARD: LatestPatch
+          NUGET_PACKAGES: $HOME/.nuget/packages
 
       - name: 🔧 Restore with lock file
         run: |
