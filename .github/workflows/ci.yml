@@ -30,7 +30,7 @@ jobs:
           path: |
             ~/.nuget/packages
             ~/.nuget/packages/.tools
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.props') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
@@ -41,11 +41,15 @@ jobs:
           rm -rf ~/.nuget/packages/.tools/fsharp.core
           echo "🧹 Also cleaning from /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core"
           rm -rf /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core || true
+          echo "🧹 Also cleaning global tools"
+          rm -rf ~/.dotnet/tools/fsharp.core || true
           echo "🧹 Ensuring NuGetFallbackFolder is not used"
           echo "DOTNET_ROLL_FORWARD=LatestPatch" >> $GITHUB_ENV
           echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
-          echo "🧹 Setting RestoreLockedMode=false to avoid lock file conflicts"
+          echo "🧹 Setting RestoreLockedMode=false and cleaning temp folders"
           echo "RESTORE_LOCKED_MODE=false" >> $GITHUB_ENV
+          find /tmp -name "*fsharp*" -exec rm -rf {} + || true
+          find $HOME/tmp -name "*fsharp*" -exec rm -rf {} + || true
         env:
           DOTNET_ROLL_FORWARD: LatestPatch
           NUGET_PACKAGES: $HOME/.nuget/packages
@@ -53,7 +57,7 @@ jobs:
 
       - name: 🔧 Restore with lock file
         run: |
-          dotnet restore --use-lock-file --disable-parallel --force
+          dotnet restore --use-lock-file --disable-parallel --force --ignore-failed-sources --no-cache
 
       - name: 🔨 Build
         run: |
