@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [staging]
+    branches: [main, staging]
 
 jobs:
   build:
@@ -39,14 +39,13 @@ jobs:
 
       - name: 🔧 Restore with lock file
         run: |
-          dotnet restore --use-lock-file --locked-mode
+          dotnet restore --use-lock-file
 
       - name: 🔨 Build
         run: |
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-incremental \
-            --no-restore
 
       - name: 🎨 Check format
         run: |
@@ -64,6 +63,7 @@ jobs:
         run: |
           dotnet test tests/MoneyToWords.Tests/MoneyToWords.Tests.fsproj \
             --configuration Release \
+            --no-restore \
             --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings
 

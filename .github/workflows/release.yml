@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -39,7 +39,7 @@ jobs:
           rm -rf ~/.nuget/packages/fsharp.core
 
       - name: 🔧 Restore
-        run: dotnet restore --use-lock-file --locked-mode
+        run: dotnet restore --use-lock-file
 
       - name: 🏷️ Resolve version
         id: version
@@ -48,13 +48,16 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         shell: bash
 
+      - name: "🔍 Debug: Show resolved version"
+        run: |
+          echo "Resolved version: ${{ steps.version.outputs.version }}"
+
       - name: 🔨 Build & Pack
         run: |
           dotnet build src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-incremental \
             --no-restore
-
           dotnet pack src/MoneyToWords/MoneyToWords.fsproj \
             --configuration Release \
             --no-build \
@@ -66,8 +69,10 @@ jobs:
             --source https://api.nuget.org/v3/index.json \
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --skip-duplicate
+          ls ./artifacts/
 
       - name: 📂 Upload release asset
+        if: success()
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
