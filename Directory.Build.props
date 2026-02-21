@@ -146,9 +146,11 @@
     <!-- ================================================================= -->
     <Target Name="CleanFSharpCoreBeforeRestore" BeforeTargets="Restore">
         <RemoveDir Directories="$(NuGetPackageFolders)fsharp.core" />
-        <Message Text="🧹 Cleaned FSharp.Core from $(NuGetPackageFolders)fsharp.core" Importance="high" />
-        <Error Condition="!Exists('$([System.IO.Path]::Combine($(NuGetPackageFolders), 'fsharp.core'))')" Text="❌ Directory $(NuGetPackageFolders)fsharp.core does not exist!" />
-        <Exec Command="ls -la '$([System.IO.Path]::Combine($(NuGetPackageFolders), 'fsharp.core'))'" Condition="Exists('$([System.IO.Path]::Combine($(NuGetPackageFolders), 'fsharp.core'))')" />
+        <RemoveDir Directories="$(NuGetPackageFolders).tools/fsharp.core" />
+        <Message Text="🧹 Cleaned FSharp.Core from $(NuGetPackageFolders)fsharp.core and .tools/fsharp.core" Importance="high" />
+        <Exec Command="echo '🧹 Ensuring NuGetFallbackFolder is not used'" />
+        <Exec Command="echo 'DOTNET_ROLL_FORWARD=LatestPatch' &gt;&gt; $GITHUB_ENV" />
+        <Exec Command="echo 'NUGET_PACKAGES=$HOME/.nuget/packages' &gt;&gt; $GITHUB_ENV" />
     </Target>
 
     <!-- ================================================================= -->
@@ -158,4 +160,16 @@
         <RepositoryBranch>$([System.Environment]::GetEnvironmentVariable("GITHUB_REF_NAME"))</RepositoryBranch>
         <RepositoryCommit>$([System.Environment]::GetEnvironmentVariable("GITHUB_SHA"))</RepositoryCommit>
     </PropertyGroup>
+
+    <!-- ================================================================= -->
+    <!-- 13. ОЧИСТКА FSharp.Core ПЕРЕД RESTORE -->
+    <!-- ================================================================= -->
+    <Target Name="CleanFSharpCoreBeforeRestore" BeforeTargets="Restore">
+        <RemoveDir Directories="$(NuGetPackageFolders)fsharp.core" />
+        <RemoveDir Directories="$(NuGetPackageFolders).tools/fsharp.core" />
+        <Message Text="🧹 Cleaned FSharp.Core from $(NuGetPackageFolders)fsharp.core and .tools/fsharp.core" Importance="high" />
+        <Exec Command="echo '🧹 Ensuring NuGetFallbackFolder is not used'" />
+        <Exec Command="echo 'DOTNET_ROLL_FORWARD=LatestPatch' &gt;&gt; $GITHUB_ENV" />
+        <Exec Command="echo 'NUGET_PACKAGES=$HOME/.nuget/packages' &gt;&gt; $GITHUB_ENV" />
+    </Target>
 </Project>

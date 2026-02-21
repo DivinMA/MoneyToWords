@@ -2,7 +2,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com)
 [![NuGet](https://img.shields.io/nuget/v/MoneyToWordsFSharpLib.svg)](https://www.nuget.org/packages/MoneyToWordsFSharpLib)
 [![Build](https://github.com/DivinMA/MoneyToWords/actions/workflows/ci.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
-[![Release](https://github.com/DivinMA/MoneyToWords/actions/workflows/release-draft.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
+[![Release](https://github.com/DivinMA/MoneyToWords/actions/workflows/release.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 
 **MoneyToWords** — надёжная библиотека на F#, преобразующая числа в текст с правильным склонением:  
@@ -136,11 +136,12 @@ MIT — свободно используй в любых проектах, ко
 ---
 
 ## 🟢 Статус
-✅ Стабильная версия: v1.0.0
+✅ Стабильная версия: v1.1.0
 ✅ CI/CD:
-CI
+[![Build](https://github.com/DivinMA/MoneyToWords/actions/workflows/ci.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
+[![Release](https://github.com/DivinMA/MoneyToWords/actions/workflows/release.yml/badge.svg)](https://github.com/DivinMA/MoneyToWords/actions)
 ✅ NuGet:
-NuGet
+[![NuGet](https://img.shields.io/nuget/v/MoneyToWordsFSharpLib.svg)](https://www.nuget.org/packages/MoneyToWordsFSharpLib)
 
 ---
 

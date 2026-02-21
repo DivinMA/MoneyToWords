@@ -31,7 +31,9 @@ jobs:
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
         with:
-          path: ~/.nuget/packages
+          path: |
+            ~/.nuget/packages
+            ~/.nuget/packages/.tools
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
 
       - name: 🧹 Pre-clean FSharp.Core
@@ -39,7 +41,7 @@ jobs:
           rm -rf ~/.nuget/packages/fsharp.core
 
       - name: 🔧 Restore
-        run: dotnet restore --use-lock-file
+        run: dotnet restore --use-lock-file --disable-parallel
 
       - name: 🏷️ Resolve version
         id: version
@@ -62,22 +64,19 @@ jobs:
             --configuration Release \
             --no-build \
             --output ./artifacts
+          ls -la ./artifacts/
 
       - name: 📦 Publish to NuGet
+        if: github.event_name == 'push'
         run: |
           dotnet nuget push ./artifacts/*.nupkg \
             --source https://api.nuget.org/v3/index.json \
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --skip-duplicate
-          ls ./artifacts/
+          ls -la ./artifacts/
 
-      - name: 📂 Upload release asset
-        if: success()
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.repository.releases[0].upload_url }}
-          asset_path: ./artifacts/MoneyToWordsFSharpLib.${{ steps.version.outputs.version }}.nupkg
-          asset_name: MoneyToWordsFSharpLib.${{ steps.version.outputs.version }}.nupkg
-          asset_content_type: application/octet-stream
+      # ❌ Удалён шаг загрузки ассета, так как в релизе нет загруженных ассетов
+      # ❌ Дублирует публикацию на NuGet
+      # ❌ Может падать, если релиз не создан
+      # Оставлена только публикация на NuGet
+
