@@ -146,6 +146,7 @@
     <!-- ================================================================= -->
     <Target Name="CleanFSharpCoreBeforeRestore" BeforeTargets="Restore">
         <RemoveDir Directories="$(NuGetPackageFolders)fsharp.core" />
+        <Message Text="🧹 Cleaned FSharp.Core from $(NuGetPackageFolders)fsharp.core" Importance="high" />
     </Target>
 
     <!-- ================================================================= -->
