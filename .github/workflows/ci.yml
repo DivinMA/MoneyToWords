@@ -79,6 +79,8 @@ jobs:
           DOTNET_ROLL_FORWARD: LatestPatch
           NUGET_PACKAGES: /home/runner/.nuget/packages
           RESTORE_LOCKED_MODE: false
+          MSBUILDDEBUGCONSOLE=1
+          NUGET_ENABLE_EXPERIMENTAL_HTTP_CLIENT=true
 
       - name: 🔧 Restore with lock file
         run: |
