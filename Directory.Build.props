@@ -147,6 +147,8 @@
     <Target Name="CleanFSharpCoreBeforeRestore" BeforeTargets="Restore">
         <RemoveDir Directories="$(NuGetPackageFolders)fsharp.core" />
         <Message Text="🧹 Cleaned FSharp.Core from $(NuGetPackageFolders)fsharp.core" Importance="high" />
+        <Error Condition="!Exists('$([System.IO.Path]::Combine($(NuGetPackageFolders), 'fsharp.core'))')" Text="❌ Directory $(NuGetPackageFolders)fsharp.core does not exist!" />
+        <Exec Command="ls -la '$([System.IO.Path]::Combine($(NuGetPackageFolders), 'fsharp.core'))'" Condition="Exists('$([System.IO.Path]::Combine($(NuGetPackageFolders), 'fsharp.core'))')" />
     </Target>
 
     <!-- ================================================================= -->
