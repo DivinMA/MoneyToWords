@@ -27,7 +27,9 @@ jobs:
       - name: 💾 Cache NuGet packages
         uses: actions/cache@v5
         with:
-          path: ~/.nuget/packages
+          path: |
+            ~/.nuget/packages
+            /usr/share/dotnet/sdk/NuGetFallbackFolder
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
@@ -36,6 +38,8 @@ jobs:
         run: |
           echo "🧹 Cleaning FSharp.Core to avoid NU1403"
           rm -rf ~/.nuget/packages/fsharp.core
+          echo "🧹 Also cleaning from $(NuGetPackageFolders) if different"
+          rm -rf "$(NuGetPackageFolders)fsharp.core" || true
 
       - name: 🔧 Restore with lock file
         run: |
