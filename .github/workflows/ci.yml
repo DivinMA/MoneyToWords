@@ -44,34 +44,34 @@ jobs:
           # Remove all FSharp.Core instances from nuget packages
           rm -rf ~/.nuget/packages/fsharp.core
           rm -rf ~/.nuget/packages/.tools/fsharp.core
-          
+
           # Remove from .NET SDK fallback folder
           echo "🧹 Also cleaning from /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core"
           rm -rf /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core || true
-          
+
           # Remove from global tools
           echo "🧹 Also cleaning global tools"
           rm -rf ~/.dotnet/tools/fsharp.core || true
-          
+
           # Remove from temp directories
           echo "🧹 Cleaning temp directories"
           find /tmp -name "*fsharp*" -exec rm -rf {} + || true
           find $HOME/tmp -name "*fsharp*" -exec rm -rf {} + || true
-          
+
           # Ensure NuGetFallbackFolder is not used
           echo "🧹 Ensuring NuGetFallbackFolder is not used"
           echo "DOTNET_ROLL_FORWARD=LatestPatch" >> $GITHUB_ENV
           echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
-          
+
           # Disable locked mode in CI
           echo "🧹 Disabling locked mode and cache"
           echo "RESTORE_LOCKED_MODE=false" >> $GITHUB_ENV
-          
+
           # List remaining fsharp files for debugging
           echo "🔍 Checking for remaining FSharp files..."
           find ~/.nuget -name "*fsharp*" -type d || true
           find /usr/share/dotnet -name "*fsharp*" -type d || true
-          
+
           # Clear dotnet temp folders
           echo "🧹 Clearing dotnet temp folders"
           dotnet nuget locals all --clear || true
@@ -79,8 +79,8 @@ jobs:
           DOTNET_ROLL_FORWARD: LatestPatch
           NUGET_PACKAGES: /home/runner/.nuget/packages
           RESTORE_LOCKED_MODE: false
-          MSBUILDDEBUGCONSOLE=1
-          NUGET_ENABLE_EXPERIMENTAL_HTTP_CLIENT=true
+          MSBUILDDEBUGCONSOLE: 1
+          NUGET_ENABLE_EXPERIMENTAL_HTTP_CLIENT: true
 
       - name: 🔧 Restore with lock file
         run: |
