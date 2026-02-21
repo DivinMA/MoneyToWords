@@ -77,12 +77,12 @@ jobs:
           dotnet nuget locals all --clear || true
         env:
           DOTNET_ROLL_FORWARD: LatestPatch
-          NUGET_PACKAGES: $HOME/.nuget/packages
+          NUGET_PACKAGES: /home/runner/.nuget/packages
           RESTORE_LOCKED_MODE: false
 
       - name: 🔧 Restore with lock file
         run: |
-          dotnet restore --use-lock-file --disable-parallel --force --ignore-failed-sources --no-cache
+          dotnet restore --use-lock-file --disable-parallel --force --ignore-failed-sources --no-cache --packages /home/runner/.nuget/packages
 
       - name: 🔨 Build
         run: |
