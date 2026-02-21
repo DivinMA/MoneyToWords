@@ -37,9 +37,11 @@ jobs:
         run: |
           echo "🧹 Cleaning FSharp.Core to avoid NU1403"
           rm -rf ~/.nuget/packages/fsharp.core
+          echo "🧹 Also cleaning from /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core"
+          rm -rf /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core || true
           echo "🧹 Ensuring NuGetFallbackFolder is not used"
-          export DOTNET_ROLL_FORWARD=LatestPatch
-          export NUGET_PACKAGES=~/.nuget/packages
+          echo "DOTNET_ROLL_FORWARD=LatestPatch" >> $GITHUB_ENV
+          echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
 
       - name: 🔧 Restore with lock file
         run: |
