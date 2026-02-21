@@ -38,8 +38,8 @@ jobs:
         run: |
           echo "🧹 Cleaning FSharp.Core to avoid NU1403"
           rm -rf ~/.nuget/packages/fsharp.core
-          echo "🧹 Also cleaning from $(NuGetPackageFolders) if different"
-          rm -rf "$(NuGetPackageFolders)fsharp.core" || true
+          echo "🧹 Also cleaning from /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core"
+          rm -rf /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core || true
 
       - name: 🔧 Restore with lock file
         run: |
