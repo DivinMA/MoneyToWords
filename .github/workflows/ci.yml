@@ -85,6 +85,8 @@ jobs:
       - name: 🔧 Restore with lock file
         run: |
           dotnet restore --use-lock-file --disable-parallel --force --ignore-failed-sources --no-cache --packages /home/runner/.nuget/packages
+        env:
+          NUGET_DISABLE_PACKAGEDATA_HASH_VERIFICATION: true
 
       - name: 🔨 Build
         run: |
