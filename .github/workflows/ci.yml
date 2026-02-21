@@ -29,7 +29,6 @@ jobs:
         with:
           path: |
             ~/.nuget/packages
-            /usr/share/dotnet/sdk/NuGetFallbackFolder
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
@@ -38,8 +37,9 @@ jobs:
         run: |
           echo "🧹 Cleaning FSharp.Core to avoid NU1403"
           rm -rf ~/.nuget/packages/fsharp.core
-          echo "🧹 Also cleaning from /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core"
-          rm -rf /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core || true
+          echo "🧹 Ensuring NuGetFallbackFolder is not used"
+          export DOTNET_ROLL_FORWARD=LatestPatch
+          export NUGET_PACKAGES=~/.nuget/packages
 
       - name: 🔧 Restore with lock file
         run: |
