@@ -58,9 +58,11 @@
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
-    <!-- Отключаем RestoreLockedMode в CI -->
+    <!-- Убедимся, что RestoreLockedMode отключен и RestorePackagesWithLockFile включен в CI -->
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
         <RestoreLockedMode>false</RestoreLockedMode>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <NuGetLockFilePath>$(MSBuildProjectDirectory)/packages.lock.json</NuGetLockFilePath>
     </PropertyGroup>
 
     <!-- Всегда отключаем FallbackFolder -->

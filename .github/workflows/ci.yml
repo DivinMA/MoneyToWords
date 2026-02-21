@@ -44,13 +44,16 @@ jobs:
           echo "🧹 Ensuring NuGetFallbackFolder is not used"
           echo "DOTNET_ROLL_FORWARD=LatestPatch" >> $GITHUB_ENV
           echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
+          echo "🧹 Setting RestoreLockedMode=false to avoid lock file conflicts"
+          echo "RESTORE_LOCKED_MODE=false" >> $GITHUB_ENV
         env:
           DOTNET_ROLL_FORWARD: LatestPatch
           NUGET_PACKAGES: $HOME/.nuget/packages
+          RESTORE_LOCKED_MODE: false
 
       - name: 🔧 Restore with lock file
         run: |
-          dotnet restore --use-lock-file --disable-parallel
+          dotnet restore --use-lock-file --disable-parallel --force
 
       - name: 🔨 Build
         run: |
