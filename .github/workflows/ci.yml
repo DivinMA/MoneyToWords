@@ -24,32 +24,57 @@ jobs:
       - name: 🔚 Shutdown build server
         run: dotnet build-server shutdown || true
 
-      - name: 💾 Cache NuGet packages
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.nuget/packages
-            ~/.nuget/packages/.tools
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.props') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+      # ❌ Отключаю кэширование NuGet из-за проблем с FSharp.Core
+      # Причина: кэширование вызывает конфликты хешей с FSharp.Core
+      # Решение: отключить кэш и выполнять полную очистку перед restore
+      # Это менее эффективно, но надежно решает проблему NU1403
+      # - name: 💾 Cache NuGet packages
+      #   uses: actions/cache@v5
+      #   with:
+      #     path: |
+      #       ~/.nuget/packages
+      #       ~/.nuget/packages/.tools
+      #     key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.props') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-nuget-
 
       - name: 🧹 Pre-clean FSharp.Core
         run: |
           echo "🧹 Cleaning FSharp.Core to avoid NU1403"
+          # Remove all FSharp.Core instances from nuget packages
           rm -rf ~/.nuget/packages/fsharp.core
           rm -rf ~/.nuget/packages/.tools/fsharp.core
+          
+          # Remove from .NET SDK fallback folder
           echo "🧹 Also cleaning from /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core"
           rm -rf /usr/share/dotnet/sdk/NuGetFallbackFolder/fsharp.core || true
+          
+          # Remove from global tools
           echo "🧹 Also cleaning global tools"
           rm -rf ~/.dotnet/tools/fsharp.core || true
+          
+          # Remove from temp directories
+          echo "🧹 Cleaning temp directories"
+          find /tmp -name "*fsharp*" -exec rm -rf {} + || true
+          find $HOME/tmp -name "*fsharp*" -exec rm -rf {} + || true
+          
+          # Ensure NuGetFallbackFolder is not used
           echo "🧹 Ensuring NuGetFallbackFolder is not used"
           echo "DOTNET_ROLL_FORWARD=LatestPatch" >> $GITHUB_ENV
           echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
-          echo "🧹 Setting RestoreLockedMode=false and cleaning temp folders"
+          
+          # Disable locked mode in CI
+          echo "🧹 Disabling locked mode and cache"
           echo "RESTORE_LOCKED_MODE=false" >> $GITHUB_ENV
-          find /tmp -name "*fsharp*" -exec rm -rf {} + || true
-          find $HOME/tmp -name "*fsharp*" -exec rm -rf {} + || true
+          
+          # List remaining fsharp files for debugging
+          echo "🔍 Checking for remaining FSharp files..."
+          find ~/.nuget -name "*fsharp*" -type d || true
+          find /usr/share/dotnet -name "*fsharp*" -type d || true
+          
+          # Clear dotnet temp folders
+          echo "🧹 Clearing dotnet temp folders"
+          dotnet nuget locals all --clear || true
         env:
           DOTNET_ROLL_FORWARD: LatestPatch
           NUGET_PACKAGES: $HOME/.nuget/packages
