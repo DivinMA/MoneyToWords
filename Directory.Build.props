@@ -142,6 +142,13 @@
     </ItemGroup>
 
     <!-- ================================================================= -->
+    <!-- 13. ОЧИСТКА FSharp.Core ПЕРЕД RESTORE -->
+    <!-- ================================================================= -->
+    <Target Name="CleanFSharpCoreBeforeRestore" BeforeTargets="Restore">
+        <RemoveDir Directories="$(NuGetPackageFolders)fsharp.core" />
+    </Target>
+
+    <!-- ================================================================= -->
     <!-- 12. CI METADATA (GitHub Actions) -->
     <!-- ================================================================= -->
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
