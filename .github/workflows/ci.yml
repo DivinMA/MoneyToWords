@@ -81,6 +81,7 @@ jobs:
           RESTORE_LOCKED_MODE: false
           MSBUILDDEBUGCONSOLE: 1
           NUGET_ENABLE_EXPERIMENTAL_HTTP_CLIENT: true
+          NUGET_PACKAGES_NO_CACHE: true
 
       - name: 🔧 Restore with lock file
         run: |
